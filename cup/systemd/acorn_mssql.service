@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - MSSQL
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/mssql --name=mssql --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

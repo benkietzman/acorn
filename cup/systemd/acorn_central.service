@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - central
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/central.php --name=central --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

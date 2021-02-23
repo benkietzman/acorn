@@ -1,0 +1,89 @@
+// vim: syntax=cpp
+// vim600: fdm=marker
+/* -*- c++ -*- */
+///////////////////////////////////////////
+// Acorn
+// -------------------------------------
+// file       : Mysql
+// author     : Ben Kietzman
+// begin      : 2019-01-09
+// copyright  : kietzman.org
+// email      : ben@kietzman.org
+///////////////////////////////////////////
+
+/**************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+**************************************************************************/
+
+/*! \file Mysql
+* \brief MySQL Interface
+*
+* Provides an interface to MySQL.
+*/
+
+#ifndef _ACORN_MYSQL_
+#define _ACORN_MYSQL_
+
+// {{{ includes
+#include <cerrno>
+#include <cstring>
+#include <ctime>
+#include <iostream>
+#include <list>
+#include <map>
+#include <mutex>
+#include <mysql/mysql.h>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <vector>
+using namespace std;
+// }}}
+
+extern "C++"
+{
+  namespace acorn
+  {
+    // {{{ structs
+    struct acorn_mysql
+    {
+      mutex secure;
+      size_t unThreads;
+      time_t CTime;
+      MYSQL *conn;
+    };
+    // }}}
+    // {{{ Mysql
+    class Mysql
+    {
+      private:
+      map<string, list<acorn_mysql *> > m_conn;
+      mutex m_mutex;
+      size_t m_unMaxConnections;
+      size_t m_unMaxQueue;
+
+      public:
+      Mysql(const size_t unMaxConnections = 10, const size_t unMaxQueue = 5);
+      ~Mysql();
+      map<string, list<acorn_mysql *> > *conn();
+      bool connect(const string strUser, const string strPassword, const string strServer, const unsigned int unPort, const string strDatabase, list<acorn_mysql *>::iterator &iter, string &strError);
+      void disconnect(const bool bUseLock = true);
+      void disconnect(list<acorn_mysql *>::iterator &iter);
+      map<string, string> *fetch(MYSQL_RES *result, vector<string> fields);
+      bool fields(MYSQL_RES *result, vector<string> &fields);
+      void free(MYSQL_RES *result);
+      void lock();
+      MYSQL_RES *query(list<acorn_mysql *>::iterator &iter, const string strQuery, unsigned long long &ullRows, string &strError);
+      void unlock();
+      bool update(list<acorn_mysql *>::iterator &iter, const string strQuery, unsigned long long &ullID, unsigned long long &ullRows, string &strError);
+    };
+    // }}}
+  }
+}
+
+#endif

@@ -1,0 +1,39 @@
+<!--
+// vim600: fdm=marker
+///////////////////////////////////////////
+// Acorn
+// -------------------------------------
+// file       : About.html
+// author     : Ben Kietzman
+// begin      : 2019-01-08
+// copyright  : kietzman.org
+// email      : ben@kietzman.org
+///////////////////////////////////////////
+
+/**************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+**************************************************************************/
+-->
+<div ng-controller="About">
+  <div ng-show="store.message" style="color:red;font-weight:bold;">{{store.message}}<br><br></div>
+  <div class="page-header">
+    <h3>Intoduction to Acorn</h3>
+  </div>
+  <p>
+    Acorn provides a load balanced fault tolerant approach to microservices.  It is designed to be a modular plug &amp; play solution.  Each microservice is an acorn and multiple acorns create what is called an acorn cluster.
+  </p>
+  <p>
+    In order to send a request to the acorn cluster, a socket connection must be opened to the load balancer at port 22676.  The request should be a single line of JSON.  The load balancer will forward the request to one of the router acorns.  The router acorn will forward the request to one of the gateway acorns.  The gateway acorn will forward the request to the appropriate acorn hosting the microservice.
+  </p>
+  <p>
+    Each acorn follows a similar structure to what is found in nature where there is a cap and a cup.  The cap comes in two types:  external and internal.  The router and gateway acorns utilize external caps.  The microservice acorns utilize internal caps.  A cap is responsible for launching the cup which contains the underlying core logic of the microservice.  The cap is also responsible for managing the acorn connection within the cluster.
+  </p>
+  <p>
+    There is one gateway acorn per hosted server.  The gateway retains a registry of what microservice acorns exist within the given server.  The gateway also forwards registrations upstream to the router acorns.  The routers retain registries of what microservices exist per gateway.  It is these registries that provide the means of routing the request to the appropriate microservice.  These registries are updated dynamically and serve to provide load balancing and fault tolerance.
+  </p>
+</div>

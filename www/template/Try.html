@@ -1,0 +1,43 @@
+<!--
+// vim600: fdm=marker
+///////////////////////////////////////////
+// Acorn
+// -------------------------------------
+// file       : Try.html
+// author     : Ben Kietzman
+// begin      : 2019-01-18
+// copyright  : kietzman.org
+// email      : ben@kietzman.org
+///////////////////////////////////////////
+
+/**************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+**************************************************************************/
+-->
+<div ng-controller="Try">
+  <div ng-show="store.message" style="color:red;font-weight:bold;">{{store.message}}<br><br></div>
+  <div class="page-header">
+    <h3>Try out your own request...</h3>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <textarea class="form-control" ng-model="store.request" placeholder="Type your JSON formatted request here..." style="height: 50%;"></textarea>
+      <div class="row" style="margin-top: 10px;">
+        <div class="col-md-8">
+          <select ng-show="store.examples" class="form-control" ng-model="store.example" ng-change="change()" ng-options="example.Name for example in store.examples"></select>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary pull-right" ng-click="request()">Send Request</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <pre ng-show="store.response" style="color: inherit; font-weight: bold; white-space: pre-wrap;">{{store.response}}</pre>
+    </div>
+  </div>
+</div>

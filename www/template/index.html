@@ -1,0 +1,147 @@
+<!--
+// vim600: fdm=marker
+///////////////////////////////////////////
+// Acorn
+// -------------------------------------
+// file       : index.html
+// author     : Ben Kietzman
+// begin      : 2018-12-27
+// copyright  : kietzman.org
+// email      : ben@kietzman.org
+///////////////////////////////////////////
+
+/**************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+**************************************************************************/
+-->
+<div ng-controller="Home">
+  <div ng-show="store.message" style="color:red;font-weight:bold;">{{store.message}}<br><br></div>
+  <div class="page-header">
+    <h3>Welcome to Acorn</h3>
+  </div>
+  <div class="row">
+    <div class="col-md-2">
+      <div class="form-group" style="display: inline-block; margin: 10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; border-radius: 10px; border-style: solid; border-width: 1px; border-color: #999999; background: gray;" valign="top">
+        <div style="-moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; border-radius: 10px 10px 0px 0px; color: white; padding: 10px; text-align: center;">
+          <table width="100%">
+            <tr>
+              <th style="background: gray; color: white; text-align: center;">Acorns</td>
+            </tr>
+          </table>
+        </div>
+        <table class="table">
+          <tr ng-repeat="acorn in store.acorns | orderBy:acorn">
+            <td>{{acorn}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-7">
+      <div ng-repeat="router in store.routers | orderBy:'Name'" class="row" style="display: inline-block; margin: 10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; border-radius: 10px; border-style: solid; border-width: 1px; border-color: #999999; background: gray;" valign="top">
+        <div class="form-group" style="display: inline-block; margin: 10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; border-radius: 10px; border-style: solid; border-width: 1px; border-color: #666666; background: #555555;" valign="top">
+          <div style="-moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; border-radius: 10px 10px 0px 0px; background: #ddeeff; padding: 10px; text-align: center;">
+            <table width="100%">
+              <tr>
+                <th style="background: #ddeeff; color: black; text-align: center;">{{router.Name}}</td>
+              </tr>
+            </table>
+          </div>
+          <table class="table">
+            <tr ng-repeat="acorn in router.Acorns | orderBy:acorn">
+              <td>{{acorn}}</td>
+            </tr>
+          </table>
+          <div style="-moz-border-radius: 0px 0px 10px 10px; -webkit-border-radius: 0px 0px 10px 10px; border-radius: 0px 0px 10px 10px; padding: 10px; background: #555555; text-align: center;">
+            <table width="100%" style="background: #555555;">
+              <tr>
+                <th colspan="2"><small>Buffers (KB)</small></th>
+              </tr>
+              <tr>
+                <td><small>In</small></td>
+                <td style="text-align: right;"><small>{{router.Buffers.Input | number}}</small></td>
+              </tr>
+              <tr>
+                <td><small>Out</small></td>
+                <td style="text-align: right;"><small>{{router.Buffers.Output | number}}</small></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div ng-repeat="gateway in router.Gateways | orderBy:'Name'" class="form-group" style="display: inline-block; margin: 10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; border-radius: 10px; border-style: solid; border-width: 1px; border-color: #666666; background: #555555;" valign="top">
+          <div style="-moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; border-radius: 10px 10px 0px 0px; background: {{gateway.background}}; padding: 10px; text-align: center;">
+            <table width="100%">
+              <tr>
+                <th style="background: {{gateway.background}}; color: black; text-align: center;">{{gateway.Name}}</td>
+              </tr>
+            </table>
+          </div>
+          <table class="table">
+            <tr ng-repeat="acorn in gateway.Acorns | orderBy:acorn">
+              <td>{{acorn}}</td>
+            </tr>
+          </table>
+          <div style="-moz-border-radius: 0px 0px 10px 10px; -webkit-border-radius: 0px 0px 10px 10px; border-radius: 0px 0px 10px 10px; padding: 10px; background: #555555; text-align: center;">
+            <table width="100%" style="background: #555555;">
+              <tr>
+                <th colspan="2"><small>Buffers (KB)</small></th>
+              </tr>
+              <tr>
+                <td><small>In</small></td>
+                <td style="text-align: right;"><small>{{gateway.Buffers.Input | number}}</small></td>
+              </tr>
+              <tr>
+                <td><small>Out</small></td>
+                <td style="text-align: right;"><small>{{gateway.Buffers.Output | number}}</small></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="form-group" style="display: inline-block; margin: 10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; border-radius: 10px; border-style: solid; border-width: 1px; border-color: #999999; background: gray;" valign="top">
+        <div style="-moz-border-radius: 10px 10px 0px 0px; -webkit-border-radius: 10px 10px 0px 0px; border-radius: 10px 10px 0px 0px; background: #2e4053; color: white; padding: 10px; text-align: center;">
+          <table width="100%" style="background: #2e4053;">
+            <tr>
+              <th style="color: white; text-align: center;">Legend</td>
+            </tr>
+          </table>
+        </div>
+        <table class="table">
+          <tr>
+            <th style="background: gray; color: white; text-align: center;">Acorns</th>
+          </tr>
+          <tr>
+            <td>Available acorns that function as microservices.</td>
+          </tr>
+          <tr>
+            <th style="background: #ddeeff; color: black; text-align: center;">Router</th>
+          </tr>
+          <tr>
+            <td>A router receives incoming requests and directs them to enabled gateways.</td>
+          </tr>
+          <tr>
+            <th style="background: #a9dfbf; color: black; text-align: center;">Gateway</th>
+          </tr>
+          <tr>
+            <td>A gateway receives incoming requests and directs them to acorns (aka: microservices).</td>
+          </tr>
+          <tr>
+            <td>A gateway with a background color of <span style="background: #a9dfbf; color: black;">green</span> means it is enabled and taking requests.</td>
+          </tr>
+          <tr>
+            <td>A gateway with a background color of <span style="background: #fad7a0; color: black;">orange</span> means it is connected but disabled and not taking requests.</td>
+          </tr>
+          <tr>
+            <td>A gateway with a background color of <span style="background: #f5b7b1; color: black;">red</span> means it is disconnected and not taking requests.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

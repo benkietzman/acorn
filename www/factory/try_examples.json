@@ -1,0 +1,61 @@
+[
+  {
+    "Name": "-- examples --"
+  },
+  {
+    "Name": "Acorn: addrInfo",
+    "Request": {"Acorn":"addrInfo","Request":{"Server":"google.com"}}
+  },
+  {
+    "Name": "Acorn: central, Function: application",
+    "Request": {"Acorn":"central","User":"","Password":"","Server":"","Database":"central","Function":"application","Request":{"name":"Central"}}
+  },
+  {
+    "Name": "Acorn: email",
+    "Request": {"Acorn":"email","Request":{"From":"","To":"","Subject":"Test Message","Text":"This is a text message.","HTML":"<html><body><b>This is an HTML message.</body></html>","Attachments":[{"Name":"test.txt","Data":"This is a text file.","Type":"text/plain"}]}}
+  },
+  {
+    "Name": "Acorn: format, Function: convert, JSON->XML",
+    "Request": {"Acorn":"format","Function":"convert","Format":{"In":"json","Out":"xml"},"Request":"{\"a\":\"1\",\"b\":{\"c\":\"2\",\"d\":\"3\"},\"e\":[\"4\",\"5\",\"6\"]}"}
+  },
+  {
+    "Name": "Acorn: format, Function: convert, XML->FCIF",
+    "Request": {"Acorn":"format","Function":"convert","Format":{"In":"xml","Out":"fcif"},"Request":"<a>1</a><b><c>2</c><d>3</d></b><e>4</e><e>5</e><e>6</e>"}
+  },
+  {
+    "Name": "Acorn: jwt, Function: encode",
+    "Request": {"Acorn":"jwt","Function":"encode","Request":{"Signer":"HS512","Secret":"abc123","Payload":{"sub":"subject","exp":1546972487}}}
+  },
+  {
+    "Name": "Acorn: logger, Function: log",
+    "Request": {"Acorn":"logger","Application":"","User":"","Password":"","Function":"log","Label":{"Type":"test"},"Message":"This is a test message."}
+  },
+  {
+    "Name": "Acorn: logger, Function: search",
+    "Request": {"Acorn":"logger","Application":"","User":"","Password":"","Function":"search","Search":{}}
+  },
+  {
+    "Name": "Acorn: mysql",
+    "Request": {"Acorn":"mysql","User":"","Password":"","Server":"","Port":"3306","Database":"","Request":{"Query":""}}
+  },
+  {
+    "Name": "Acorn: password, Function: verify",
+    "Request": {"Acorn":"password","Function":"verify","Application":"","Type":"","User":"","Password":""}
+  },
+  {
+    "Name": "Acorn: ping",
+    "Request": {"Acorn":"ping"}
+  },
+  {
+    "Name": "Acorn: router, Function: list",
+    "Request": {"Acorn":"router","Function":"list"}
+  },
+  {
+    "Name": "Acorn: router, Function: ping",
+    "Request": {"Acorn":"router","Function":"ping"}
+  },
+  {
+    "Name": "Acorn: router, Function: status",
+    "Request": {"Acorn":"router","Function":"status"}
+  }
+]

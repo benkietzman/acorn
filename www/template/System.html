@@ -1,0 +1,49 @@
+<!--
+// vim600: fdm=marker
+///////////////////////////////////////////
+// Acorn
+// -------------------------------------
+// file       : System.html
+// author     : Ben Kietzman
+// begin      : 2019-01-18
+// copyright  : kietzman.org
+// email      : ben@kietzman.org
+///////////////////////////////////////////
+
+/**************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+**************************************************************************/
+-->
+<div ng-controller="System">
+  <div ng-show="store.message" style="color:red;font-weight:bold;">{{store.message}}<br><br></div>
+  <div class="page-header">
+    <h3>System Information</h3>
+  </div>
+  <table ng-show="store.sysInfo" class="table table-condensed table-striped">
+    <tr>
+      <th>Server</th>
+      <th>Daemon</th>
+      <th>Start Time</th>
+      <th>Owner</th>
+      <th>Processes</th>
+      <th>Image (KB)</th>
+      <th>Resident (KB)</th>
+      <th>Current Alarms</th>
+    </tr>
+    <tr ng-repeat="info in store.sysInfo | orderBy:['Server','Daemon']">
+      <td>{{info.Server}}</td>
+      <td>{{info.Daemon}}</td>
+      <td>{{info.data.StartTime}}</td>
+      <td>{{info.data.Owners}}</td>
+      <td>{{info.data.NumberOfProcesses | number}}</td>
+      <td>{{info.data.ImageSize | number}}</td>
+      <td>{{info.data.ResidentSize | number}}</td>
+      <td style="color:red;">{{info.data.Alarms}}</td>
+    </tr>
+  </table>
+</div>

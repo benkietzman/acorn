@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - JSON Web Token
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/jwt --name=jwt --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

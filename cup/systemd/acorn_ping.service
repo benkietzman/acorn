@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - Ping
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/ping --name=ping --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - Gateway
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup="/usr/local/acorn/cup/gateway --name=server --port=22677 --router=localhost --server=localhost" --name=localhost --port=22677 --type=external
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - addrInfo
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/addrInfo --name=addrInfo --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

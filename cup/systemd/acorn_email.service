@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - email
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/email.php --name=email --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

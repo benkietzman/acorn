@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - format
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup=/usr/local/acorn/cup/format --name=format --type=internal
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target

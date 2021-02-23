@@ -1,0 +1,11 @@
+[Unit]
+Description=Acorn - Router
+
+[Service]
+Type=simple
+ExecStart=/usr/local/acorn/cap --cup="/usr/local/acorn/cup/router --name=server --server=server" --name=server --port=22676 --type=external
+Restart=always
+User=acorn
+
+[Install]
+WantedBy=multi-user.target
