@@ -23,7 +23,7 @@ bin:
 	cd ../common; ./configure; make;
 
 obj/cap.o: cap.cpp obj
-	g++ -g -std=c++14 -Wall -c cap.cpp -o obj/cap.o $(CPPFLAGS) -I../common
+	g++ -g -Wall -c cap.cpp -o obj/cap.o $(CPPFLAGS) -I../common
 
 obj:
 	-if [ ! -d obj ]; then mkdir obj; fi;

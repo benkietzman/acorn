@@ -49,37 +49,37 @@ bin:
 	cd ../../common; ./configure; make;
 
 obj/addrInfo.o: addrInfo.cpp obj
-	g++ -g -std=c++14 -Wall -c addrInfo.cpp -o obj/addrInfo.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c addrInfo.cpp -o obj/addrInfo.o $(CPPFLAGS) -I../../common;
 
 obj/format.o: format.cpp obj
-	g++ -g -std=c++14 -Wall -c format.cpp -o obj/format.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c format.cpp -o obj/format.o $(CPPFLAGS) -I../../common;
 
 obj/gateway.o: gateway.cpp obj
-	g++ -g -std=c++14 -Wall -c gateway.cpp -o obj/gateway.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c gateway.cpp -o obj/gateway.o $(CPPFLAGS) -I../../common;
 
 obj/jwt.o: jwt.cpp obj
-	g++ -g -std=c++14 -Wall -c jwt.cpp -o obj/jwt.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c jwt.cpp -o obj/jwt.o $(CPPFLAGS) -I../../common;
 
 obj/logger.o: logger.cpp obj
-	g++ -g -std=c++14 -Wall -c logger.cpp -o obj/logger.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c logger.cpp -o obj/logger.o $(CPPFLAGS) -I../../common;
 
 obj/mssql.o: mssql.cpp obj
-	g++ -g -std=c++14 -Wall -c mssql.cpp -o obj/mssql.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c mssql.cpp -o obj/mssql.o $(CPPFLAGS) -I../../common;
 
 obj/mysql.o: mysql.cpp obj
-	g++ -g -std=c++14 -Wall -c mysql.cpp -o obj/mysql.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c mysql.cpp -o obj/mysql.o $(CPPFLAGS) -I../../common;
 
 obj/password.o: password.cpp obj
-	g++ -g -std=c++14 -Wall -c password.cpp -o obj/password.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c password.cpp -o obj/password.o $(CPPFLAGS) -I../../common;
 
 obj/ping.o: ping.cpp obj
-	g++ -g -std=c++14 -Wall -c ping.cpp -o obj/ping.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c ping.cpp -o obj/ping.o $(CPPFLAGS) -I../../common;
 
 obj/router.o: router.cpp obj
-	g++ -g -std=c++14 -Wall -c router.cpp -o obj/router.o $(CPPFLAGS) -I../../common;
+	g++ -g -Wall -c router.cpp -o obj/router.o $(CPPFLAGS) -I../../common;
 
 obj/Mysql.o: include/Mysql.cpp obj
-	g++ -g -std=c++14 -Wall -c include/Mysql.cpp -o obj/Mysql.o $(CPPFLAGS);
+	g++ -g -Wall -c include/Mysql.cpp -o obj/Mysql.o $(CPPFLAGS);
 
 obj:
 	if [ ! -d obj ]; then mkdir obj; fi;
