@@ -19,10 +19,16 @@ bin/cap: ../common/libcommon.a obj/cap.o bin
 bin:
 	-if [ ! -d bin ]; then mkdir bin; fi;
 
-../common/libcommon.a:
+../common/libcommon.a: ../common/Makefile
 	cd ../common; ./configure; make;
 
-obj/cap.o: cap.cpp obj
+../common/Makefile: ../common/configure
+	cd ../common; ./configure;
+
+../common/configure:
+	cd ../; git clone https://github.com/benkietzman/common.git
+
+obj/cap.o: cap.cpp obj ../common/Makefile
 	g++ -g -Wall -c cap.cpp -o obj/cap.o $(CPPFLAGS) -I../common
 
 obj:
