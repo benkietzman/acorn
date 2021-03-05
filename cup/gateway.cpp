@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
                 ptRequest->m["Request"]->insert("Gateway", gstrName);
                 ptRequest->m["Request"]->insert("Server", gstrServer);
                 ptRequest->m["Request"]->insert("Port", gstrPort);
-                if (gpCentral->acorn()->request(ptRequest, ptResponse, strError))
+                if (gpCentral->acorn()->request(ptRequest, ptResponse, 5, strError))
                 {
                   if (ptResponse->m.find("Status") != ptResponse->m.end() && ptResponse->m["Status"]->v == "okay")
                   {
@@ -600,7 +600,7 @@ bool acornDeregister(string strPrefix, conn *ptConn, string &strError)
   ptRequest->m["Request"] = new Json;
   ptRequest->m["Request"]->insert("Gateway", gstrName);
   ptRequest->m["Request"]->insert("Acorn", ptConn->strName);
-  if (gpCentral->acorn()->request(ptRequest, ptResponse, strError))
+  if (gpCentral->acorn()->request(ptRequest, ptResponse, 5, strError))
   {
     if (ptResponse->m.find("Status") != ptResponse->m.end() && ptResponse->m["Status"]->v == "okay")
     {
@@ -652,7 +652,7 @@ bool acornRegister(string strPrefix, conn *ptConn, const string strName, string 
   ptRequest->m["Request"] = new Json;
   ptRequest->m["Request"]->insert("Gateway", gstrName);
   ptRequest->m["Request"]->insert("Acorn", ptConn->strName);
-  if (gpCentral->acorn()->request(ptRequest, ptResponse, strError))
+  if (gpCentral->acorn()->request(ptRequest, ptResponse, 5, strError))
   {
     if (ptResponse->m.find("Status") != ptResponse->m.end() && ptResponse->m["Status"]->v == "okay")
     {
