@@ -8,7 +8,7 @@
 # email      : ben@kietzman.org
 ###########################################
 
-MAKEFLAGS="-j ${C}"
+#MAKEFLAGS="-j ${C}"
 
 all: bin/addrInfo bin/format bin/gateway bin/jwt bin/logger bin/mssql bin/mysql bin/password bin/ping bin/router
 
