@@ -265,7 +265,7 @@ int main(int argc, char *argv[], char *env[])
                       memset(&addr, 0, sizeof(sockaddr_un));
                       addr.sun_family = AF_UNIX;
                       strncpy(addr.sun_path, gstrGateway.c_str(), sizeof(addr.sun_path) - 1);
-                      if (connect(fdSocket, (sockaddr *)&addr, sizeof(sockaddr)) == 0)
+                      if (connect(fdSocket, (sockaddr *)&addr, sizeof(sockaddr_un)) == 0)
                       {
                         bNotifyConnect = false;
                       }
