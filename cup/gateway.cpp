@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
           memset(&addr, 0, sizeof(sockaddr_un));
           addr.sun_family = AF_UNIX;
           strncpy(addr.sun_path, UNIX_SOCKET, sizeof(addr.sun_path) - 1);
-          if (bind(fdUnix, (sockaddr *)&addr, sizeof(sockaddr)) == 0)
+          if (bind(fdUnix, (sockaddr *)&addr, sizeof(sockaddr_un)) == 0)
           {
             ssMessage.str("");
             ssMessage << strPrefix << "->bind():  Bound to socket." << endl;
