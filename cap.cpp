@@ -947,10 +947,6 @@ int main(int argc, char *argv[], char *env[])
                 }
                 if (connsIter != conns.end())
                 {
-                  if (gpSyslog != NULL)
-                  { 
-                    gpSyslog->connectionStopped("Closed request.", (*connsIter)->fdSocket);
-                  }
                   close((*connsIter)->fdSocket);
                   delete (*connsIter);
                   conns.erase(connsIter);
@@ -960,10 +956,6 @@ int main(int argc, char *argv[], char *env[])
             }
             while (!conns.empty())
             {
-              if (gpSyslog != NULL)
-              { 
-                gpSyslog->connectionStopped("Closed request.", conns.front()->fdSocket);
-              }
               close(conns.front()->fdSocket);
               delete conns.front();
               conns.pop_front();
@@ -974,10 +966,6 @@ int main(int argc, char *argv[], char *env[])
             }
             close(PARENT_READ);
             close(PARENT_WRITE);
-            if (gpSyslog != NULL)
-            {
-              gpSyslog->commandEnded(gstrCup);
-            }
             gbShutdown = true;
             threadMonitor.join();
             while (!logger.empty())

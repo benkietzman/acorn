@@ -1124,10 +1124,6 @@ int main(int argc, char *argv[])
                 {
                   if ((*linksIter)->fdSocket != -1)
                   {
-                    if (gpSyslog != NULL)
-                    {
-                      gpSyslog->connectionStopped("Closed link.", (*linksIter)->fdSocket);
-                    }
                     close((*linksIter)->fdSocket);
                   }
                   delete (*linksIter);
@@ -1162,10 +1158,6 @@ int main(int argc, char *argv[])
                   ssMessage.str("");
                   ssMessage << strPrefix << "->close() [" << (*(*i))->strServer << "]:  Disconnected from router." << endl;
                   gpCentral->log(ssMessage.str(), strError);
-                  if (gpSyslog != NULL)
-                  {
-                    gpSyslog->connectionStopped("Closed router.", (*(*i))->fdSocket);
-                  }
                   close((*(*i))->fdSocket);
                   (*(*i))->fdSocket = -1;
                 }
@@ -1241,10 +1233,6 @@ int main(int argc, char *argv[])
             // {{{ remove links
             while (!links.empty())
             {
-              if (gpSyslog != NULL)
-              {
-                gpSyslog->connectionStopped("Closed link.", links.front()->fdSocket);
-              }
               close(links.front()->fdSocket);
               delete links.front();
               links.pop_front();
@@ -1258,10 +1246,6 @@ int main(int argc, char *argv[])
                 ssMessage.str("");
                 ssMessage << strPrefix << "->close() [" << gRouters.front()->strServer << "]:  Disconnected from router." << endl;
                 gpCentral->log(ssMessage.str(), strError);
-                if (gpSyslog != NULL)
-                {
-                  gpSyslog->connectionStopped("Closed router.", gRouters.front()->fdSocket);
-                }
                 close(gRouters.front()->fdSocket);
               }
               if (gRouters.front()->ptStatus != NULL)
