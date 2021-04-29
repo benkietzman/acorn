@@ -33,6 +33,8 @@
 #include <iostream>
 #include <list>
 #include <netdb.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <poll.h>
 #include <pthread.h>
 #include <sstream>
@@ -55,6 +57,14 @@ using namespace common;
 * \brief Prints the usage statement.
 */
 #define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -c CUP, --cup=CUP" << endl << "     Provides the executable command and arguments for the cup." << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -g GATEWAY, --gateway=GATEWAY" << endl << "     Used by an internal type to provide the unix socket path to the gateway." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -m RESIDENT, --memory=RESIDENT" << endl << "     Provides the maximum resident memory size restriction in MB." << endl << endl << " -n NAME, --name=NAME" << endl << "     Provides the acorn, gateway, or router name." << endl << endl << " -p PORT, --port=PORT" << endl << "     Used by an external type to provide the listening port number." << endl << endl << "     --syslog" << endl << "     Enables syslog." << endl << endl << " -t TYPE, --type=TYPE" << endl << "     Provides a cap type of either external or internal." << endl << endl
+/*! \def CERTIFICATE
+* \brief Contains the certificate path.
+*/
+#define CERTIFICATE "/server.crt"
+/*! \def PRIVATE_KEY
+* \brief Contains the key path.
+*/
+#define PRIVATE_KEY "/server.key"
 #define PARENT_READ  readpipe[0]
 #define CHILD_WRITE  readpipe[1]
 #define CHILD_READ   writepipe[0]
@@ -67,6 +77,8 @@ struct conn
   size_t unUnique;
   string strBuffer[2];
   stringstream ssUnique;
+  SSL *ssl;
+  common_socket_type eSocketType;
 };
 // }}}
 // {{{ global variables
@@ -165,6 +177,7 @@ int main(int argc, char *argv[], char *env[])
             socklen_t loggerAddrlen;
             string strCupBuffer[2], strGatewayBuffer[2], strLoggerBuffer[2], strJson, strLoggerPassword, strLoggerPort = "5648", strLoggerServer, strLoggerUser;
             stringstream ssKey;
+            SSL_CTX *ctx = NULL;
             Json *ptJson;
             close(CHILD_READ);
             close(CHILD_WRITE);
@@ -188,6 +201,24 @@ int main(int argc, char *argv[], char *env[])
             {
               lParentArg |= O_NONBLOCK;
               fcntl(PARENT_WRITE, F_SETFL, lParentArg);
+            }
+            if ((ctx = gpCentral->utility()->sslInitServer(strError)) != NULL)
+            {
+              cerr << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful." << endl;
+              if (gpCentral->utility()->sslLoadCertKey(ctx, (gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError))
+              {
+                cerr << strPrefix << "->CentralAddons::utility()->sslLoadCertKey():  SSL certification/key loading was successful." << endl;
+              }
+              else
+              {
+                gbShutdown = true;
+                cerr << strPrefix << "->CentralAddons::utility()->sslLoadCertKey() error:  " << strError << endl;
+              }
+            }
+            else
+            {
+              gbShutdown = true;
+              cerr << strPrefix << "->CentralAddons::utility()->sslInitServer() error:  " << strError << endl;
             }
             while (!gbShutdown && !bExit)
             {
@@ -621,6 +652,7 @@ int main(int argc, char *argv[], char *env[])
                           { 
                             gpSyslog->connectionStarted("Accepted an incoming request.", fdClient);
                           }
+                          ptConn->eSocketType = COMMON_SOCKET_UNKNOWN;
                           ptConn->fdSocket = fdClient;
                           while (bFound)
                           {
@@ -836,7 +868,38 @@ int main(int argc, char *argv[], char *env[])
                         // {{{ read from client
                         if (fds[i].revents & POLLIN)
                         {
-                          if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
+                          bool bClientClose = false;
+                          if ((*j)->eSocketType == COMMON_SOCKET_UNKNOWN)
+                          {
+                            if (gpCentral->utility()->socketType(fds[i].fd, (*j)->eSocketType, strError))
+                            {
+                              if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                              {
+                                ERR_clear_error();
+                                if (((*j)->ssl = SSL_new(ctx)) == NULL)
+                                {
+                                  bClientClose = true;
+                                  cerr << strPrefix << "->SSL_new() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                                }
+                                else if (!(SSL_set_fd((*j)->ssl, fds[i].fd)))
+                                {
+                                  bClientClose = true;
+                                  cerr << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                                }
+                                else if ((nReturn = SSL_accept((*j)->ssl)) <= 0)
+                                {
+                                  bClientClose = true;
+                                  cerr << strPrefix << "->SSL_accept() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                                }
+                              }
+                            }
+                            else
+                            {
+                              bClientClose = true;
+                              cerr << strPrefix << "->Utility::socketType() error:  " << strError << endl;
+                            }
+                          }
+                          if (!bClientClose && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
                           {
                             (*j)->strBuffer[0].append(szBuffer, nReturn);
                             while ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
@@ -887,9 +950,16 @@ int main(int argc, char *argv[], char *env[])
                           else
                           {
                             removals.push_back((*j)->fdSocket);
-                            if (nReturn < 0)
+                            if (!bClose && nReturn < 0)
                             {
-                              cerr << strPrefix << "->read(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                              if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                              {
+                                cerr << strPrefix << "->SSL_read() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                              }
+                              else
+                              {
+                                cerr << strPrefix << "->read(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                              }
                             }
                           }
                         }
@@ -897,7 +967,8 @@ int main(int argc, char *argv[], char *env[])
                         // {{{ write to client
                         if (fds[i].revents & POLLOUT)
                         {
-                          if ((nReturn = write(fds[i].fd, (*j)->strBuffer[1].c_str(), (*j)->strBuffer[1].size())) > 0)
+                          nReturn = 0;
+                          if ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_write((*j)->ssl, (*j)->strBuffer[1].c_str(), (((*j)->strBuffer[1].size() < 65535)?(*j)->strBuffer[1].size():65536))) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = write(fds[i].fd, (*j)->strBuffer[1].c_str(), (((*j)->strBuffer[1].size() < 65535)?(*j)->strBuffer[1].size():65536))) > 0)))
                           {
                             (*j)->strBuffer[1].erase(0, nReturn);
                           }
@@ -906,7 +977,14 @@ int main(int argc, char *argv[], char *env[])
                             removals.push_back((*j)->fdSocket);
                             if (nReturn < 0)
                             {
-                              cerr << strPrefix << "->write(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                              if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                              {
+                                cerr << strPrefix << "->SSL_write() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                              }
+                              else
+                              {
+                                cerr << strPrefix << "->write(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                              }
                             }
                           }
                         }
@@ -947,6 +1025,11 @@ int main(int argc, char *argv[], char *env[])
                 }
                 if (connsIter != conns.end())
                 {
+                  if ((*connsIter)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                  {
+                    SSL_shutdown((*connsIter)->ssl);
+                    SSL_free((*connsIter)->ssl);
+                  }
                   close((*connsIter)->fdSocket);
                   delete (*connsIter);
                   conns.erase(connsIter);
@@ -956,6 +1039,11 @@ int main(int argc, char *argv[], char *env[])
             }
             while (!conns.empty())
             {
+              if (conns.front()->eSocketType == COMMON_SOCKET_ENCRYPTED)
+              {
+                SSL_shutdown(conns.front()->ssl);
+                SSL_free(conns.front()->ssl);
+              }
               close(conns.front()->fdSocket);
               delete conns.front();
               conns.pop_front();
@@ -973,6 +1061,8 @@ int main(int argc, char *argv[], char *env[])
               logger.front().clear();
               logger.pop_front();
             }
+            SSL_CTX_free(ctx);
+            EVP_cleanup();
             kill(gExecPid, SIGTERM);
           }
           // }}}
