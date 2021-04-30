@@ -347,15 +347,15 @@ int main(int argc, char *argv[], char *env[])
                     {
                       if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
                       {
-                        if (lLoggerArg >= 0)
-                        {
-                          fcntl(fdLoggerConnecting, F_SETFL, lLoggerArg);
-                        }
                         if (SSL_connect(sslLogger) == 1)
                         {
                           cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
                           fdLogger = fdLoggerConnecting;
                           fdLoggerConnecting = -1;
+                          if (lLoggerArg >= 0)
+                          {
+                            fcntl(fdLogger, F_SETFL, lLoggerArg);
+                          }
                         }
                         else
                         {
@@ -435,15 +435,15 @@ int main(int argc, char *argv[], char *env[])
                                 {
                                   if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
                                   {
-                                    if (lLoggerArg >= 0)
-                                    {
-                                      fcntl(fdLoggerConnecting, F_SETFL, lLoggerArg);
-                                    }
                                     if (SSL_connect(sslLogger) == 1)
                                     {
                                       cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
                                       fdLogger = fdLoggerConnecting;
                                       fdLoggerConnecting = -1;
+                                      if (lLoggerArg >= 0)
+                                      {
+                                        fcntl(fdLogger, F_SETFL, lLoggerArg);
+                                      }
                                     }
                                     else
                                     {
