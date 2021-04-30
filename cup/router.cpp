@@ -667,7 +667,16 @@ int main(int argc, char *argv[])
                                 ssMessage << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror();
                                 gpCentral->log(ssMessage.str());
                               }
-                              else if ((nReturn = SSL_accept((*j)->ssl)) <= 0)
+                              else if ((nReturn = SSL_accept((*j)->ssl)) == 1)
+                              {
+                                long lArg;
+                                if ((lArg = fcntl((*j)->fdSocket, F_GETFL, NULL)) >= 0)
+                                {
+                                  lArg |= O_NONBLOCK;
+                                  fcntl((*j)->fdSocket, F_SETFL, lArg);
+                                }
+                              }
+                              else
                               {
                                 bCloseLink = true;
                                 ssMessage.str("");
@@ -760,7 +769,7 @@ int main(int argc, char *argv[])
                             if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && nReturn != SSL_ERROR_ZERO_RETURN)
                             {
                               ssMessage.str("");
-                              ssMessage << strPrefix << "->Central::utility()->sslread(" << nReturn << ") error [client]:  " <<  gpCentral->utility()->sslstrerror();
+                              ssMessage << strPrefix << "->Central::utility()->sslread(" << nReturn << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
                               gpCentral->log(ssMessage.str(), strError);
                             }
                             else if ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)

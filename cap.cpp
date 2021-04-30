@@ -374,6 +374,12 @@ int main(int argc, char *argv[], char *env[])
                                 {
                                   if (SSL_connect(sslLogger) == 1)
                                   {
+                                    long lArg;
+                                    if ((lArg = fcntl(fdLogger, F_GETFL, NULL)) >= 0)
+                                    {
+                                      lArg |= O_NONBLOCK;
+                                      fcntl(fdLogger, F_SETFL, lArg);
+                                    }
                                     cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
                                   }
                                   else
@@ -837,7 +843,7 @@ int main(int argc, char *argv[], char *env[])
                         bCloseLogger = true;
                         if (nReturn != SSL_ERROR_ZERO_RETURN)
                         {
-                          cerr << strPrefix << "->Central::utility()->sslread() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                          cerr << strPrefix << "->Central::utility()->sslread() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
                         }
                       }
                     }
