@@ -812,9 +812,8 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ read from logger
                     if (fds[i].revents & POLLIN)
                     {
-                      if ((nReturn = SSL_read(sslLogger, szBuffer, 65536)) > 0)
+                      if (gpCentral->utility()->sslread(sslLogger, strLoggerBuffer[0], nReturn))
                       {
-                        strLoggerBuffer[0].append(szBuffer, nReturn);
                         while ((unPosition = strLoggerBuffer[0].find("\n")) != string::npos)
                         {
                           ptJson = new Json(strLoggerBuffer[0].substr(0, unPosition));
@@ -836,9 +835,9 @@ int main(int argc, char *argv[], char *env[])
                       else
                       {
                         bCloseLogger = true;
-                        if (nReturn < 0)
+                        if (nReturn != SSL_ERROR_ZERO_RETURN)
                         {
-                          cerr << strPrefix << "->SSL_read() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                          cerr << strPrefix << "->Central::utility()->sslread() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
                         }
                       }
                     }

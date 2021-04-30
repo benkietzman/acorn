@@ -684,9 +684,8 @@ int main(int argc, char *argv[])
                             gpCentral->log(ssMessage.str());
                           }
                         }
-                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
+                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && (gpCentral->utility()->sslread((*j)->ssl, (*j)->strBuffer[0], nReturn))) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && (gpCentral->utility()->fdread(fds[i].fd, (*j)->strBuffer[0], nReturn)))))
                         {
-                          (*j)->strBuffer[0].append(szBuffer, nReturn);
                           if ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
                           {
                             ptJson = new Json((*j)->strBuffer[0].substr(0, unPosition));
@@ -756,18 +755,20 @@ int main(int argc, char *argv[])
                         else
                         {
                           linkRemovals.push_back((*j)->fdSocket);
-                          if (!bCloseLink && nReturn < 0)
+                          if (!bCloseLink)
                           {
-                            ssMessage.str("");
-                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && nReturn != SSL_ERROR_ZERO_RETURN)
                             {
-                              ssMessage << strPrefix << "->SSL_read() error [client]:  " <<  gpCentral->utility()->sslstrerror();
+                              ssMessage.str("");
+                              ssMessage << strPrefix << "->Central::utility()->sslread(" << nReturn << ") error [client]:  " <<  gpCentral->utility()->sslstrerror();
+                              gpCentral->log(ssMessage.str(), strError);
                             }
-                            else
+                            else if ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)
                             {
-                              ssMessage << strPrefix << "->read(" << errno << ") error [client]:  " << strerror(errno);
+                              ssMessage.str("");
+                              ssMessage << strPrefix << "->Central::utility()->read(" << errno << ") error [client]:  " << strerror(errno);
+                              gpCentral->log(ssMessage.str(), strError);
                             }
-                            gpCentral->log(ssMessage.str(), strError);
                           }
                         }
                       }
