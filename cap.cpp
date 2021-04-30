@@ -175,9 +175,10 @@ int main(int argc, char *argv[], char *env[])
             size_t unIndex, unPosition, unUnique = 0;
             sockaddr *loggerAddr;
             socklen_t loggerAddrlen;
-            string strCupBuffer[2], strGatewayBuffer[2], strLoggerBuffer[2], strJson, strLoggerPassword, strLoggerPort = "5648", strLoggerServer, strLoggerUser;
+            string strCupBuffer[2], strGatewayBuffer[2], strLoggerBuffer[2], strJson, strLoggerPassword, strLoggerPort = "5649", strLoggerServer, strLoggerUser;
             stringstream ssKey;
-            SSL_CTX *ctx = NULL;
+            SSL *sslLogger = NULL;
+            SSL_CTX *ctx = NULL, *ctxLogger = NULL;
             Json *ptJson;
             close(CHILD_READ);
             close(CHILD_WRITE);
@@ -208,6 +209,15 @@ int main(int argc, char *argv[], char *env[])
               if (gpCentral->utility()->sslLoadCertKey(ctx, (gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError))
               {
                 cerr << strPrefix << "->CentralAddons::utility()->sslLoadCertKey():  SSL certification/key loading was successful." << endl;
+                if ((ctxLogger = gpCentral->utility()->sslInitClient(strError)) != NULL)
+                {
+                  cerr << strPrefix << "->CentralAddons::utility()->sslInitClient():  SSL initialization was successful." << endl;
+                }
+                else
+                {
+                  gbShutdown = true;
+                  cerr << strPrefix << "->CentralAddons::utility()->sslInitClient() error:  " << strError << endl;
+                }
               }
               else
               {
@@ -333,12 +343,45 @@ int main(int argc, char *argv[], char *env[])
                 {
                   if (connect(fdLoggerConnecting, loggerAddr, loggerAddrlen) == 0)
                   {
-                    cout << strPrefix << "->connect() [logger]:  Connected." << endl;
-                    fdLogger = fdLoggerConnecting;
-                    fdLoggerConnecting = -1;
-                    if (lLoggerArg >= 0)
+                    if ((sslLogger = SSL_new(ctxLogger)) != NULL)
                     {
-                      fcntl(fdLogger, F_SETFL, lLoggerArg);
+                      if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
+                      {
+                        if (SSL_connect(sslLogger) == 1)
+                        {
+                          cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
+                          fdLogger = fdLoggerConnecting;
+                          fdLoggerConnecting = -1;
+                          if (lLoggerArg >= 0)
+                          {
+                            fcntl(fdLogger, F_SETFL, lLoggerArg);
+                          }
+                        }
+                        else
+                        {
+                          cerr << strPrefix << "->SSL_connect() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                          SSL_shutdown(sslLogger);
+                          SSL_free(sslLogger);
+                          sslLogger = NULL;
+                          close(fdLoggerConnecting);
+                          fdLoggerConnecting = -1;
+                        }
+                      }
+                      else
+                      {
+                        cerr << strPrefix << "->SSL_set_fd() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                        SSL_shutdown(sslLogger);
+                        SSL_free(sslLogger);
+                        sslLogger = NULL;
+                        close(fdLoggerConnecting);
+                        fdLoggerConnecting = -1;
+                      }
+                    }
+                    else
+                    {
+                      cerr << strPrefix << "->SSL_new() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                      close(fdLoggerConnecting);
+                      fdLoggerConnecting = -1;
                     }
                   }
                   else if (errno != EALREADY && errno != EINPROGRESS)
@@ -388,12 +431,45 @@ int main(int argc, char *argv[], char *env[])
                               }
                               if (connect(fdLoggerConnecting, loggerAddr, loggerAddrlen) == 0)
                               {
-                                cout << strPrefix << "->connect() [logger]:  Connected." << endl;
-                                fdLogger = fdLoggerConnecting;
-                                fdLoggerConnecting = -1;
-                                if (lLoggerArg >= 0)
+                                if ((sslLogger = SSL_new(ctxLogger)) != NULL)
                                 {
-                                  fcntl(fdLogger, F_SETFL, lLoggerArg);
+                                  if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
+                                  {
+                                    if (SSL_connect(sslLogger) == 1)
+                                    {
+                                      cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
+                                      fdLogger = fdLoggerConnecting;
+                                      fdLoggerConnecting = -1;
+                                      if (lLoggerArg >= 0)
+                                      {
+                                        fcntl(fdLogger, F_SETFL, lLoggerArg);
+                                      }
+                                    }
+                                    else
+                                    {
+                                      cerr << strPrefix << "->SSL_connect() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                      SSL_shutdown(sslLogger);
+                                      SSL_free(sslLogger);
+                                      sslLogger = NULL;
+                                      close(fdLoggerConnecting);
+                                      fdLoggerConnecting = -1;
+                                    }
+                                  }
+                                  else
+                                  {
+                                    cerr << strPrefix << "->SSL_set_fd() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                    SSL_shutdown(sslLogger);
+                                    SSL_free(sslLogger);
+                                    sslLogger = NULL;
+                                    close(fdLoggerConnecting);
+                                    fdLoggerConnecting = -1;
+                                  }
+                                }
+                                else
+                                {
+                                  cerr << strPrefix << "->SSL_new() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                  close(fdLoggerConnecting);
+                                  fdLoggerConnecting = -1;
                                 }
                               }
                               else if (errno != EALREADY && errno != EINPROGRESS)
@@ -806,7 +882,7 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ read from logger
                     if (fds[i].revents & POLLIN)
                     {
-                      if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
+                      if ((nReturn = SSL_read(sslLogger, szBuffer, 65536)) > 0)
                       {
                         strLoggerBuffer[0].append(szBuffer, nReturn);
                         while ((unPosition = strLoggerBuffer[0].find("\n")) != string::npos)
@@ -832,7 +908,7 @@ int main(int argc, char *argv[], char *env[])
                         bCloseLogger = true;
                         if (nReturn < 0)
                         {
-                          cerr << strPrefix << "->read(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                          cerr << strPrefix << "->SSL_read() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
                         }
                       }
                     }
@@ -840,7 +916,7 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ write to logger
                     else if (fds[i].revents & POLLOUT)
                     {
-                      if ((nReturn = write(fds[i].fd, strLoggerBuffer[1].c_str(), strLoggerBuffer[1].size())) > 0)
+                      if ((nReturn = SSL_write(sslLogger, strLoggerBuffer[1].c_str(), strLoggerBuffer[1].size())) > 0)
                       {
                         strLoggerBuffer[1].erase(0, nReturn);
                       }
@@ -849,7 +925,7 @@ int main(int argc, char *argv[], char *env[])
                         bCloseLogger = true;
                         if (nReturn < 0)
                         {
-                          cerr << strPrefix << "->write(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                          cerr << strPrefix << "->SSL_write() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
                         }
                       }
                     }
@@ -1010,6 +1086,12 @@ int main(int argc, char *argv[], char *env[])
               if (bCloseLogger)
               {
                 bCloseLogger = false;
+                if (sslLogger != NULL)
+                {
+                  SSL_shutdown(sslLogger);
+                  SSL_free(sslLogger);
+                  sslLogger = NULL;
+                }
                 close(fdLogger);
                 fdLogger = -1;
               }
@@ -1061,6 +1143,7 @@ int main(int argc, char *argv[], char *env[])
               logger.front().clear();
               logger.pop_front();
             }
+            SSL_CTX_free(ctxLogger);
             SSL_CTX_free(ctx);
             EVP_cleanup();
             kill(gExecPid, SIGTERM);
