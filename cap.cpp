@@ -163,20 +163,18 @@ int main(int argc, char *argv[], char *env[])
           // {{{ parent - communication
           else if (gExecPid > 0)
           {
-            addrinfo *loggerResult;
             bool bClose = false, bCloseLogger = false, bExit = false, bExternal = ((gstrType == "external")?true:false), bNotifyConnect = false, bRegistered = false;
             char szBuffer[65536];
-            int fdLogger = -1, fdLoggerConnecting = -1, fdSocket = -1, nReturn;
+            int fdLogger = -1, fdSocket = -1, nReturn;
             list<conn *> conns;
             list<int> removals;
             list<map<string, string> > logger;
-            long lParentArg, lLoggerArg;
+            long lParentArg;
             pollfd *fds;
             size_t unIndex, unPosition, unUnique = 0;
-            sockaddr *loggerAddr;
-            socklen_t loggerAddrlen;
             string strCupBuffer[2], strGatewayBuffer[2], strLoggerBuffer[2], strJson, strLoggerPassword, strLoggerPort = "5649", strLoggerServer, strLoggerUser;
             stringstream ssKey;
+            time_t CLoggerTime[2] = {0, 0};
             SSL *sslLogger = NULL;
             SSL_CTX *ctx = NULL, *ctxLogger = NULL;
             Json *ptJson;
@@ -337,174 +335,112 @@ int main(int argc, char *argv[], char *env[])
               }
               // }}}
               // {{{ logger socket
-              if (fdLogger == -1)
+              time(&(CLoggerTime[1]));
+              if (fdLogger == -1 && (CLoggerTime[1] - CLoggerTime[0]) > 300)
               {
-                if (fdLoggerConnecting != -1)
+                ifstream inLogger;
+                stringstream ssLogger;
+                CLoggerTime[0] = CLoggerTime[1];
+                ssLogger << gstrData << "/.cred/logger";
+                inLogger.open(ssLogger.str().c_str());
+                if (inLogger)
                 {
-                  if (connect(fdLoggerConnecting, loggerAddr, loggerAddrlen) == 0)
+                  if (getline(inLogger, strJson))
                   {
-                    if ((sslLogger = SSL_new(ctxLogger)) != NULL)
+                    ptJson = new Json(strJson);
+                    if (ptJson->m.find("User") != ptJson->m.end() && !ptJson->m["User"]->v.empty() && ptJson->m.find("Password") != ptJson->m.end() && !ptJson->m["Password"]->v.empty() && ptJson->m.find("Server") != ptJson->m.end() && !ptJson->m["Server"]->v.empty())
                     {
-                      if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
+                      addrinfo hints, *result;
+                      bool bConnected[2] = {false, false};
+                      strLoggerUser = ptJson->m["User"]->v;
+                      strLoggerPassword = ptJson->m["Password"]->v;
+                      strLoggerServer = ptJson->m["Server"]->v;
+                      memset(&hints, 0, sizeof(addrinfo));
+                      hints.ai_family = AF_UNSPEC;
+                      hints.ai_socktype = SOCK_STREAM;
+                      if ((nReturn = getaddrinfo(strLoggerServer.c_str(), strLoggerPort.c_str(), &hints, &result)) == 0)
                       {
-                        if (SSL_connect(sslLogger) == 1)
+                        addrinfo *rp;
+                        for (rp = result; !bConnected[1] && rp != NULL; rp = rp->ai_next)
                         {
-                          cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
-                          fdLogger = fdLoggerConnecting;
-                          fdLoggerConnecting = -1;
-                          if (lLoggerArg >= 0)
+                          bConnected[0] = false;
+                          if ((fdLogger = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
                           {
-                            fcntl(fdLogger, F_SETFL, lLoggerArg);
-                          }
-                        }
-                        else
-                        {
-                          cerr << strPrefix << "->SSL_connect() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
-                          SSL_shutdown(sslLogger);
-                          SSL_free(sslLogger);
-                          sslLogger = NULL;
-                          close(fdLoggerConnecting);
-                          fdLoggerConnecting = -1;
-                        }
-                      }
-                      else
-                      {
-                        cerr << strPrefix << "->SSL_set_fd() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
-                        SSL_shutdown(sslLogger);
-                        SSL_free(sslLogger);
-                        sslLogger = NULL;
-                        close(fdLoggerConnecting);
-                        fdLoggerConnecting = -1;
-                      }
-                    }
-                    else
-                    {
-                      cerr << strPrefix << "->SSL_new() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
-                      close(fdLoggerConnecting);
-                      fdLoggerConnecting = -1;
-                    }
-                  }
-                  else if (errno != EALREADY && errno != EINPROGRESS)
-                  {
-                    cerr << strPrefix << "->connect(" << errno << ") error [logger]:  " << strerror(errno) << endl;
-                    close(fdLoggerConnecting);
-                    fdLoggerConnecting = -1;
-                    freeaddrinfo(loggerResult);
-                  }
-                }
-                else
-                {
-                  ifstream inLogger;
-                  stringstream ssLogger;
-                  ssLogger << gstrData << "/.cred/logger";
-                  inLogger.open(ssLogger.str().c_str());
-                  if (inLogger)
-                  {
-                    if (getline(inLogger, strJson))
-                    {
-                      ptJson = new Json(strJson);
-                      if (ptJson->m.find("User") != ptJson->m.end() && !ptJson->m["User"]->v.empty() && ptJson->m.find("Password") != ptJson->m.end() && !ptJson->m["Password"]->v.empty() && ptJson->m.find("Server") != ptJson->m.end() && !ptJson->m["Server"]->v.empty())
-                      {
-                        addrinfo hints;
-                        bool bConnected[2] = {false, false};
-                        strLoggerUser = ptJson->m["User"]->v;
-                        strLoggerPassword = ptJson->m["Password"]->v;
-                        strLoggerServer = ptJson->m["Server"]->v;
-                        memset(&hints, 0, sizeof(addrinfo));
-                        hints.ai_family = AF_UNSPEC;
-                        hints.ai_socktype = SOCK_STREAM;
-                        if ((nReturn = getaddrinfo(strLoggerServer.c_str(), strLoggerPort.c_str(), &hints, &(loggerResult))) == 0)
-                        {
-                          addrinfo *rp;
-                          for (rp = (loggerResult); !bConnected[1] && rp != NULL; rp = rp->ai_next)
-                          {
-                            bConnected[0] = false;
-                            if ((fdLoggerConnecting = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
+                            if (connect(fdLogger, rp->ai_addr, rp->ai_addrlen) == 0)
                             {
-                              long lArg;
-                              loggerAddr = rp->ai_addr;
-                              loggerAddrlen = rp->ai_addrlen;
-                              if ((lLoggerArg = lArg = fcntl(fdLoggerConnecting, F_GETFL, NULL)) >= 0)
+                              if ((sslLogger = SSL_new(ctxLogger)) != NULL)
                               {
-                                lArg |= O_NONBLOCK;
-                                fcntl(fdLoggerConnecting, F_SETFL, lArg);
-                              }
-                              if (connect(fdLoggerConnecting, loggerAddr, loggerAddrlen) == 0)
-                              {
-                                if ((sslLogger = SSL_new(ctxLogger)) != NULL)
+                                if (SSL_set_fd(sslLogger, fdLogger) == 1)
                                 {
-                                  if (SSL_set_fd(sslLogger, fdLoggerConnecting) == 1)
+                                  if (SSL_connect(sslLogger) == 1)
                                   {
-                                    if (SSL_connect(sslLogger) == 1)
+                                    long lArg;
+                                    cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
+                                    if ((lArg = fcntl(fdLogger, F_GETFL, NULL)) >= 0)
                                     {
-                                      cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
-                                      fdLogger = fdLoggerConnecting;
-                                      fdLoggerConnecting = -1;
-                                      if (lLoggerArg >= 0)
-                                      {
-                                        fcntl(fdLogger, F_SETFL, lLoggerArg);
-                                      }
-                                    }
-                                    else
-                                    {
-                                      cerr << strPrefix << "->SSL_connect() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
-                                      SSL_shutdown(sslLogger);
-                                      SSL_free(sslLogger);
-                                      sslLogger = NULL;
-                                      close(fdLoggerConnecting);
-                                      fdLoggerConnecting = -1;
+                                      lArg |= O_NONBLOCK;
+                                      fcntl(fdLogger, F_SETFL, lArg);
                                     }
                                   }
                                   else
                                   {
-                                    cerr << strPrefix << "->SSL_set_fd() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                    cerr << strPrefix << "->SSL_connect() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
                                     SSL_shutdown(sslLogger);
                                     SSL_free(sslLogger);
                                     sslLogger = NULL;
-                                    close(fdLoggerConnecting);
-                                    fdLoggerConnecting = -1;
+                                    close(fdLogger);
+                                    fdLogger = -1;
                                   }
                                 }
                                 else
                                 {
-                                  cerr << strPrefix << "->SSL_new() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
-                                  close(fdLoggerConnecting);
-                                  fdLoggerConnecting = -1;
+                                  cerr << strPrefix << "->SSL_set_fd() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                  SSL_shutdown(sslLogger);
+                                  SSL_free(sslLogger);
+                                  sslLogger = NULL;
+                                  close(fdLogger);
+                                  fdLogger = -1;
                                 }
                               }
-                              else if (errno != EALREADY && errno != EINPROGRESS)
+                              else
                               {
-                                cerr << strPrefix << "->connect(" << errno << ") error [logger]:  " << strerror(errno) << endl;
-                                close(fdLoggerConnecting);
-                                fdLoggerConnecting = -1;
-                                freeaddrinfo(loggerResult);
+                                cerr << strPrefix << "->SSL_new() error [logger]:  " << gpCentral->utility()->sslstrerror() << endl;
+                                close(fdLogger);
+                                fdLogger = -1;
                               }
                             }
                             else
                             {
-                              cerr << strPrefix << "->socket(" << errno << ") error [logger]:  " << strerror(errno) << endl;
-                              freeaddrinfo(loggerResult);
+                              cerr << strPrefix << "->connect(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                              close(fdLogger);
+                              fdLogger = -1;
+                              freeaddrinfo(result);
                             }
                           }
-                        }
-                        else
-                        {
-                          cerr << strPrefix << "->getaddrinfo(" << nReturn << ") error [logger]:  " << gai_strerror(nReturn) << endl;
+                          else
+                          {
+                            cerr << strPrefix << "->socket(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                            freeaddrinfo(result);
+                          }
                         }
                       }
                       else
                       {
-                        cerr << strPrefix << " error [logger]:  Invalide credentials." << endl;
+                        cerr << strPrefix << "->getaddrinfo(" << nReturn << ") error [logger]:  " << gai_strerror(nReturn) << endl;
                       }
-                      delete ptJson;
                     }
                     else
                     {
-                      cerr << strPrefix << "->getline(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                      cerr << strPrefix << " error [logger]:  Invalide credentials." << endl;
                     }
+                    delete ptJson;
                   }
-                  inLogger.clear();
+                  else
+                  {
+                    cerr << strPrefix << "->getline(" << errno << ") error [logger]:  " << strerror(errno) << endl;
+                  }
                 }
+                inLogger.clear();
               }
               // }}}
               // {{{ prep sockets
@@ -903,7 +839,7 @@ int main(int argc, char *argv[], char *env[])
                           delete ptJson;
                         }
                       }
-                      else
+                      else if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_WANT_READ)
                       {
                         bCloseLogger = true;
                         if (nReturn < 0)
