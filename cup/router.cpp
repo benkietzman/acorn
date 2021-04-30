@@ -31,6 +31,8 @@
 #include <list>
 #include <map>
 #include <mutex>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <poll.h>
 #include <sstream>
 #include <string>
@@ -49,6 +51,14 @@ using namespace common;
 * \brief Prints the usage statement.
 */
 #define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -n NAME, --name=NAME" << endl << "     Sets the router name." << endl << endl << " -s SERVER, --server=SERVER" << endl << "     Sets the server name." << endl << endl << "     --syslog" << endl << "     Enables syslog." << endl << endl
+/*! \def CERTIFICATE
+* \brief Contains the certificate path.
+*/
+#define CERTIFICATE "/server.crt"
+/*! \def PRIVATE_KEY
+* \brief Contains the key path.
+*/
+#define PRIVATE_KEY "/server.key"
 // }}}
 // {{{ structs
 struct conn
@@ -65,6 +75,8 @@ struct conn
   string strName;
   string strPort;
   string strServer;
+  SSL *ssl;
+  common_socket_type eSocketType;
   Json *ptStatus;
 };
 // }}}
@@ -78,6 +90,7 @@ string gstrData = "/data/acorn"; //!< Global data directory.
 string gstrName; //!< Global router name.
 string gstrPassword; //<! Contains the password.
 string gstrServer; //!< Global acorn or gateway name.
+SSL_CTX *gCtx = NULL; //!< Global OpenSSL context.
 Central *gpCentral = NULL; //!< Contains the Central class.
 Syslog *gpSyslog = NULL; //!< Contains the Syslog class.
 // }}}
@@ -456,6 +469,7 @@ int main(int argc, char *argv[])
                         {
                           gpSyslog->connectionStarted("Accepted an incoming request.", fdClient);
                         }
+                        ptConn->eSocketType = COMMON_SOCKET_UNKNOWN;
                         ptConn->fdSocket = fdClient;
                         links.push_back(ptConn);
                       }
@@ -631,7 +645,46 @@ int main(int argc, char *argv[])
                       // {{{ read from link
                       if (fds[i].revents & POLLIN)
                       {
-                        if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
+                        bool bCloseLink = false;
+                        if ((*j)->eSocketType == COMMON_SOCKET_UNKNOWN)
+                        {   
+                          if (gpCentral->utility()->socketType((*j)->fdSocket, (*j)->eSocketType, strError)) 
+                          { 
+                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                            {
+                              ERR_clear_error();
+                              if (((*j)->ssl = SSL_new(gCtx)) == NULL)
+                              {
+                                bCloseLink = true;
+                                ssMessage.str("");
+                                ssMessage << strPrefix << "->SSL_new() error:  " <<  gpCentral->utility()->sslstrerror();
+                                gpCentral->log(ssMessage.str());
+                              }
+                              else if (!(SSL_set_fd((*j)->ssl, (*j)->fdSocket)))
+                              {
+                                bCloseLink = true;
+                                ssMessage.str("");
+                                ssMessage << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror();
+                                gpCentral->log(ssMessage.str());
+                              }
+                              else if ((nReturn = SSL_accept((*j)->ssl)) <= 0)
+                              {
+                                bCloseLink = true;
+                                ssMessage.str("");
+                                ssMessage << strPrefix << "->SSL_accept() error:  " <<  gpCentral->utility()->sslstrerror();
+                                gpCentral->log(ssMessage.str());
+                              }
+                            }
+                          }
+                          else
+                          {
+                            bCloseLink = true;
+                            ssMessage.str("");
+                            ssMessage << strPrefix << "->Utility::socketType() error:  " << strError;
+                            gpCentral->log(ssMessage.str());
+                          }
+                        }
+                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
                         {
                           (*j)->strBuffer[0].append(szBuffer, nReturn);
                           if ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
@@ -703,10 +756,17 @@ int main(int argc, char *argv[])
                         else
                         {
                           linkRemovals.push_back((*j)->fdSocket);
-                          if (nReturn < 0)
+                          if (!bCloseLink && nReturn < 0)
                           {
                             ssMessage.str("");
-                            ssMessage << strPrefix << "->read(" << errno << ") error:  " << strerror(errno);
+                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                            {
+                              ssMessage << strPrefix << "->SSL_read() error [client]:  " <<  gpCentral->utility()->sslstrerror();
+                            }
+                            else
+                            {
+                              ssMessage << strPrefix << "->read(" << errno << ") error [client]:  " << strerror(errno);
+                            }
                             gpCentral->log(ssMessage.str(), strError);
                           }
                         }
@@ -1124,6 +1184,11 @@ int main(int argc, char *argv[])
                 {
                   if ((*linksIter)->fdSocket != -1)
                   {
+                    if ((*linksIter)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                    {
+                      SSL_shutdown((*linksIter)->ssl);
+                      SSL_free((*linksIter)->ssl);
+                    }
                     close((*linksIter)->fdSocket);
                   }
                   delete (*linksIter);
@@ -1233,6 +1298,11 @@ int main(int argc, char *argv[])
             // {{{ remove links
             while (!links.empty())
             {
+              if (links.front()->eSocketType == COMMON_SOCKET_ENCRYPTED)
+              {
+                SSL_shutdown(links.front()->ssl);
+                SSL_free(links.front()->ssl);
+              }
               close(links.front()->fdSocket);
               delete links.front();
               links.pop_front();
@@ -1286,6 +1356,8 @@ int main(int argc, char *argv[])
       delete gpSyslog;
     }
     delete gpCentral;
+    SSL_CTX_free(gCtx);
+    EVP_cleanup();
   }
   else
   {
@@ -1541,11 +1613,11 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
 bool initialize(string strPrefix, int argc, char *argv[], string &strError)
 {
   bool bResult = false;
+  stringstream ssMessage;
   
   gpCentral = new Central(strError);
   if (strError.empty())
   {
-    bResult = true;
     // {{{ set signal handling
     sethandles(sighandle);
     sigignore(SIGBUS);
@@ -1617,6 +1689,27 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
     // }}}
     gpCentral->setApplication(gstrApplication);
     gpCentral->setLog(gstrData, "router_", "daily", true, true);
+    if ((gCtx = gpCentral->utility()->sslInitServer(strError)) != NULL)
+    {
+      ssMessage.str("");
+      ssMessage << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful.";
+      gpCentral->log(ssMessage.str());
+      if (gpCentral->utility()->sslLoadCertKey(gCtx, (gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError))
+      {
+        bResult = true;
+        ssMessage.str("");
+        ssMessage << strPrefix << "->CentralAddons::utility()->sslLoadCertKey():  SSL certification/key loading was successful.";
+        gpCentral->log(ssMessage.str());
+      }
+      else
+      {
+        strError = (string)"CentralAddons::utility()->sslLoadCertKey() " + strError;
+      }
+    }
+    else
+    {
+      strError = (string)"CentralAddons::utility()->sslInitServer() " + strError;
+    }
   }
 
   return bResult;

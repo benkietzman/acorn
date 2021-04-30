@@ -868,7 +868,7 @@ int main(int argc, char *argv[], char *env[])
                         // {{{ read from client
                         if (fds[i].revents & POLLIN)
                         {
-                          bool bClientClose = false;
+                          bool bCloseClient = false;
                           if ((*j)->eSocketType == COMMON_SOCKET_UNKNOWN)
                           {
                             if (gpCentral->utility()->socketType(fds[i].fd, (*j)->eSocketType, strError))
@@ -878,28 +878,28 @@ int main(int argc, char *argv[], char *env[])
                                 ERR_clear_error();
                                 if (((*j)->ssl = SSL_new(ctx)) == NULL)
                                 {
-                                  bClientClose = true;
+                                  bCloseClient = true;
                                   cerr << strPrefix << "->SSL_new() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
                                 }
                                 else if (!(SSL_set_fd((*j)->ssl, fds[i].fd)))
                                 {
-                                  bClientClose = true;
+                                  bCloseClient = true;
                                   cerr << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
                                 }
                                 else if ((nReturn = SSL_accept((*j)->ssl)) <= 0)
                                 {
-                                  bClientClose = true;
+                                  bCloseClient = true;
                                   cerr << strPrefix << "->SSL_accept() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
                                 }
                               }
                             }
                             else
                             {
-                              bClientClose = true;
+                              bCloseClient = true;
                               cerr << strPrefix << "->Utility::socketType() error:  " << strError << endl;
                             }
                           }
-                          if (!bClientClose && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
+                          if (!bCloseClient && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
                           {
                             (*j)->strBuffer[0].append(szBuffer, nReturn);
                             while ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
