@@ -374,13 +374,7 @@ int main(int argc, char *argv[], char *env[])
                                 {
                                   if (SSL_connect(sslLogger) == 1)
                                   {
-                                    long lArg;
                                     cout << strPrefix << "->SSL_connect() [logger]:  Connected." << endl;
-                                    if ((lArg = fcntl(fdLogger, F_GETFL, NULL)) >= 0)
-                                    {
-                                      lArg |= O_NONBLOCK;
-                                      fcntl(fdLogger, F_SETFL, lArg);
-                                    }
                                   }
                                   else
                                   {
@@ -839,7 +833,7 @@ int main(int argc, char *argv[], char *env[])
                           delete ptJson;
                         }
                       }
-                      else if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_WANT_READ)
+                      else
                       {
                         bCloseLogger = true;
                         if (nReturn < 0)
