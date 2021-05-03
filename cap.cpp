@@ -851,7 +851,7 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ write to logger
                     else if (fds[i].revents & POLLOUT)
                     {
-                      if ((nReturn = gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn)) <= 0)
+                      if (gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn))
                       {
                         bCloseLogger = true;
                         if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
