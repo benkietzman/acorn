@@ -766,10 +766,10 @@ int main(int argc, char *argv[])
                           linkRemovals.push_back((*j)->fdSocket);
                           if (!bCloseLink)
                           {
-                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && nReturn != SSL_ERROR_ZERO_RETURN)
+                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && SSL_get_error((*j)->ssl, nReturn) != SSL_ERROR_ZERO_RETURN)
                             {
                               ssMessage.str("");
-                              ssMessage << strPrefix << "->Central::utility()->sslread(" << nReturn << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
+                              ssMessage << strPrefix << "->Central::utility()->sslread(" << SSL_get_error((*j)->ssl, nReturn) << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
                               gpCentral->log(ssMessage.str(), strError);
                             }
                             else if ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)

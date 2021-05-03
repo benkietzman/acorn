@@ -841,7 +841,7 @@ int main(int argc, char *argv[], char *env[])
                       else
                       {
                         bCloseLogger = true;
-                        if (nReturn != SSL_ERROR_ZERO_RETURN)
+                        if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
                         {
                           cerr << strPrefix << "->Central::utility()->sslread() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
                         }
@@ -851,16 +851,12 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ write to logger
                     else if (fds[i].revents & POLLOUT)
                     {
-                      if ((nReturn = SSL_write(sslLogger, strLoggerBuffer[1].c_str(), strLoggerBuffer[1].size())) > 0)
-                      {
-                        strLoggerBuffer[1].erase(0, nReturn);
-                      }
-                      else
+                      if ((nReturn = gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn)) <= 0)
                       {
                         bCloseLogger = true;
-                        if (nReturn < 0)
+                        if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
                         {
-                          cerr << strPrefix << "->SSL_write() error [logger]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                          cerr << strPrefix << "->Central::utility()->sslwrite() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
                         }
                       }
                     }
