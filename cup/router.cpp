@@ -667,16 +667,7 @@ int main(int argc, char *argv[])
                                 ssMessage << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror();
                                 gpCentral->log(ssMessage.str());
                               }
-                              else if ((nReturn = SSL_accept((*j)->ssl)) == 1)
-                              {
-                                long lArg;
-                                if ((lArg = fcntl((*j)->fdSocket, F_GETFL, NULL)) >= 0)
-                                {
-                                  lArg |= O_NONBLOCK;
-                                  fcntl((*j)->fdSocket, F_SETFL, lArg);
-                                }
-                              }
-                              else
+                              else if ((nReturn = SSL_accept((*j)->ssl)) != 1)
                               {
                                 bCloseLink = true;
                                 ssMessage.str("");
