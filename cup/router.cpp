@@ -1711,7 +1711,9 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
     {
       strError = (string)"CentralAddons::utility()->sslInitServer() " + strError;
     }
+    gpCentral->utility()->sslDeinit();
   }
+  delete gpCentral;
 
   return bResult;
 }

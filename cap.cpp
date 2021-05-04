@@ -845,7 +845,7 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ write to logger
                     else if (fds[i].revents & POLLOUT)
                     {
-                      if (gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn))
+                      if (!gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn))
                       {
                         bCloseLogger = true;
                         if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
@@ -1100,6 +1100,7 @@ int main(int argc, char *argv[], char *env[])
     {
       delete gpSyslog;
     }
+    gpCentral->utility()->sslDeinit();
     delete gpCentral;
   }
   else
@@ -1241,6 +1242,7 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
       }
     }
     // }}}
+    gpCentral->utility()->sslInit();
     gpCentral->setApplication(gstrApplication);
   }
 
