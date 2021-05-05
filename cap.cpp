@@ -176,7 +176,7 @@ int main(int argc, char *argv[], char *env[])
             stringstream ssKey;
             time_t CLoggerTime[2] = {0, 0};
             SSL *sslLogger = NULL;
-            SSL_CTX *ctx = NULL, *ctxLogger = NULL;
+            SSL_CTX *ctx = NULL;
             Json *ptJson;
             close(CHILD_READ);
             close(CHILD_WRITE);
@@ -350,7 +350,7 @@ int main(int argc, char *argv[], char *env[])
                           {
                             if (connect(fdLogger, rp->ai_addr, rp->ai_addrlen) == 0)
                             {
-                              if ((sslLogger = SSL_new(ctxLogger)) != NULL)
+                              if ((sslLogger = SSL_new(ctx)) != NULL)
                               {
                                 if (SSL_set_fd(sslLogger, fdLogger) == 1)
                                 {
@@ -1050,7 +1050,6 @@ int main(int argc, char *argv[], char *env[])
               logger.front().clear();
               logger.pop_front();
             }
-            SSL_CTX_free(ctxLogger);
             SSL_CTX_free(ctx);
             kill(gExecPid, SIGTERM);
           }
