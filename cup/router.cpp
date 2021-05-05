@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
                             gpCentral->log(ssMessage.str());
                           }
                         }
-                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslread((*j)->ssl, (*j)->strBuffer[0], nReturn)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdread(fds[i].fd, (*j)->strBuffer[0], nReturn))))
+                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslRead((*j)->ssl, (*j)->strBuffer[0], nReturn)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdread(fds[i].fd, (*j)->strBuffer[0], nReturn))))
                         {
                           if ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
                           {
@@ -760,7 +760,7 @@ int main(int argc, char *argv[])
                             if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && SSL_get_error((*j)->ssl, nReturn) != SSL_ERROR_ZERO_RETURN)
                             {
                               ssMessage.str("");
-                              ssMessage << strPrefix << "->Central::utility()->sslread(" << SSL_get_error((*j)->ssl, nReturn) << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
+                              ssMessage << strPrefix << "->Central::utility()->sslRead(" << SSL_get_error((*j)->ssl, nReturn) << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
                               gpCentral->log(ssMessage.str(), strError);
                             }
                             else if ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)
@@ -1356,9 +1356,9 @@ int main(int argc, char *argv[])
     {
       delete gpSyslog;
     }
-    delete gpCentral;
     SSL_CTX_free(gCtx);
-    EVP_cleanup();
+    gpCentral->utility()->sslDeinit();
+    delete gpCentral;
   }
   else
   {
@@ -1690,30 +1690,18 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
     // }}}
     gpCentral->setApplication(gstrApplication);
     gpCentral->setLog(gstrData, "router_", "daily", true, true);
-    if ((gCtx = gpCentral->utility()->sslInitServer(strError)) != NULL)
+    if ((gCtx = gpCentral->utility()->sslInitServer((gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError)) != NULL)
     {
+      bResult = true;
       ssMessage.str("");
       ssMessage << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful.";
       gpCentral->log(ssMessage.str());
-      if (gpCentral->utility()->sslLoadCertKey(gCtx, (gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError))
-      {
-        bResult = true;
-        ssMessage.str("");
-        ssMessage << strPrefix << "->CentralAddons::utility()->sslLoadCertKey():  SSL certification/key loading was successful.";
-        gpCentral->log(ssMessage.str());
-      }
-      else
-      {
-        strError = (string)"CentralAddons::utility()->sslLoadCertKey() " + strError;
-      }
     }
     else
     {
       strError = (string)"CentralAddons::utility()->sslInitServer() " + strError;
     }
-    gpCentral->utility()->sslDeinit();
   }
-  delete gpCentral;
 
   return bResult;
 }

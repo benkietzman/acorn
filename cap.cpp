@@ -201,27 +201,9 @@ int main(int argc, char *argv[], char *env[])
               lParentArg |= O_NONBLOCK;
               fcntl(PARENT_WRITE, F_SETFL, lParentArg);
             }
-            if ((ctx = gpCentral->utility()->sslInitServer(strError)) != NULL)
+            if ((ctx = gpCentral->utility()->sslInitServer((gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError)) != NULL)
             {
               cerr << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful." << endl;
-              if (gpCentral->utility()->sslLoadCertKey(ctx, (gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError))
-              {
-                cerr << strPrefix << "->CentralAddons::utility()->sslLoadCertKey():  SSL certification/key loading was successful." << endl;
-                if ((ctxLogger = gpCentral->utility()->sslInitClient(strError)) != NULL)
-                {
-                  cerr << strPrefix << "->CentralAddons::utility()->sslInitClient():  SSL initialization was successful." << endl;
-                }
-                else
-                {
-                  gbShutdown = true;
-                  cerr << strPrefix << "->CentralAddons::utility()->sslInitClient() error:  " << strError << endl;
-                }
-              }
-              else
-              {
-                gbShutdown = true;
-                cerr << strPrefix << "->CentralAddons::utility()->sslLoadCertKey() error:  " << strError << endl;
-              }
             }
             else
             {
@@ -812,7 +794,7 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ read from logger
                     if (fds[i].revents & POLLIN)
                     {
-                      if (gpCentral->utility()->sslread(sslLogger, strLoggerBuffer[0], nReturn))
+                      if (gpCentral->utility()->sslRead(sslLogger, strLoggerBuffer[0], nReturn))
                       {
                         while ((unPosition = strLoggerBuffer[0].find("\n")) != string::npos)
                         {
@@ -837,7 +819,7 @@ int main(int argc, char *argv[], char *env[])
                         bCloseLogger = true;
                         if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
                         {
-                          cerr << strPrefix << "->Central::utility()->sslread() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
+                          cerr << strPrefix << "->Central::utility()->sslRead() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
                         }
                       }
                     }
@@ -845,12 +827,12 @@ int main(int argc, char *argv[], char *env[])
                     // {{{ write to logger
                     else if (fds[i].revents & POLLOUT)
                     {
-                      if (!gpCentral->utility()->sslwrite(sslLogger, strLoggerBuffer[1], nReturn))
+                      if (!gpCentral->utility()->sslWrite(sslLogger, strLoggerBuffer[1], nReturn))
                       {
                         bCloseLogger = true;
                         if (SSL_get_error(sslLogger, nReturn) != SSL_ERROR_ZERO_RETURN)
                         {
-                          cerr << strPrefix << "->Central::utility()->sslwrite() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
+                          cerr << strPrefix << "->Central::utility()->sslWrite() error [logger]:  " <<  gpCentral->utility()->sslstrerror(sslLogger, nReturn) << endl;
                         }
                       }
                     }
@@ -1070,7 +1052,6 @@ int main(int argc, char *argv[], char *env[])
             }
             SSL_CTX_free(ctxLogger);
             SSL_CTX_free(ctx);
-            EVP_cleanup();
             kill(gExecPid, SIGTERM);
           }
           // }}}
