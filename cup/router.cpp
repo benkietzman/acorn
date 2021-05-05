@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
                             gpCentral->log(ssMessage.str());
                           }
                         }
-                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslRead((*j)->ssl, (*j)->strBuffer[0], nReturn)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdread(fds[i].fd, (*j)->strBuffer[0], nReturn))))
+                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslRead((*j)->ssl, (*j)->strBuffer[0], nReturn)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdRead(fds[i].fd, (*j)->strBuffer[0], nReturn))))
                         {
                           if ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
                           {
