@@ -204,7 +204,7 @@ int main(int argc, char *argv[], char *env[])
             if ((ctx = gpCentral->utility()->sslInitServer((gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError)) != NULL)
             {
               cerr << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful." << endl;
-              if ((ctx = gpCentral->utility()->sslInitClient(strError)) != NULL)
+              if ((ctxLogger = gpCentral->utility()->sslInitClient(strError)) != NULL)
               {
                 cerr << strPrefix << "->CentralAddons::utility()->sslInitClient():  SSL initialization was successful." << endl;
               }
