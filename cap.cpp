@@ -176,7 +176,7 @@ int main(int argc, char *argv[], char *env[])
             stringstream ssKey;
             time_t CLoggerTime[2] = {0, 0};
             SSL *sslLogger = NULL;
-            SSL_CTX *ctx = NULL;
+            SSL_CTX *ctx = NULL, *ctxLogger;
             Json *ptJson;
             close(CHILD_READ);
             close(CHILD_WRITE);
@@ -204,6 +204,15 @@ int main(int argc, char *argv[], char *env[])
             if ((ctx = gpCentral->utility()->sslInitServer((gstrData + CERTIFICATE), (gstrData + PRIVATE_KEY), strError)) != NULL)
             {
               cerr << strPrefix << "->CentralAddons::utility()->sslInitServer():  SSL initialization was successful." << endl;
+              if ((ctx = gpCentral->utility()->sslInitClient(strError)) != NULL)
+              {
+                cerr << strPrefix << "->CentralAddons::utility()->sslInitClient():  SSL initialization was successful." << endl;
+              }
+              else
+              {
+                gbShutdown = true;
+                cerr << strPrefix << "->CentralAddons::utility()->sslInitClient() error:  " << strError << endl;
+              }
             }
             else
             {
@@ -350,7 +359,7 @@ int main(int argc, char *argv[], char *env[])
                           {
                             if (connect(fdLogger, rp->ai_addr, rp->ai_addrlen) == 0)
                             {
-                              if ((sslLogger = SSL_new(ctx)) != NULL)
+                              if ((sslLogger = SSL_new(ctxLogger)) != NULL)
                               {
                                 if (SSL_set_fd(sslLogger, fdLogger) == 1)
                                 {
@@ -1051,6 +1060,7 @@ int main(int argc, char *argv[], char *env[])
               logger.pop_front();
             }
             SSL_CTX_free(ctx);
+            SSL_CTX_free(ctxLogger);
             kill(gExecPid, SIGTERM);
           }
           // }}}
