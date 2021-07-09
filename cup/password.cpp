@@ -391,10 +391,6 @@ void request(Json *ptJson)
                                     bVerified = true;
                                   }
                                 }
-                                for (list<map<string, string> >::iterator getAccountIDIter = getAccountID.begin(); getAccountIDIter != getAccountID.end(); getAccountIDIter++)
-                                {
-                                  getAccountIDIter->clear();
-                                }
                                 getAccountID.clear();
                               }
                               else if (getAccountRow["aes"] == "1")
@@ -480,10 +476,6 @@ void request(Json *ptJson)
                             stringstream ssError;
                             ssError << "Acorn::mysqlQuery(" << ssQuery.str() << ") error:  " << strError << endl;
                             strError = ssError.str();
-                          }
-                          for (list<map<string, string> >::iterator getAccountIter = getAccount.begin(); getAccountIter != getAccount.end(); getAccountIter++)
-                          {
-                            getAccountIter->clear();
                           }
                           getAccount.clear();
                         }

@@ -311,32 +311,32 @@ int main(int argc, char *argv[])
             {
               // {{{ prep sockets
               unIndex = ((!gstrBuffer[1].empty())?3:2);
-              for (list<conn *>::iterator i = gConns.begin(); i != gConns.end(); i++)
+              for (auto &i : gConns)
               {
-                if ((*i)->fdSocket != -1)
+                if (i->fdSocket != -1)
                 {
                   unIndex++;
                 }
-                else if ((*i)->fdConnecting != -1)
+                else if (i->fdConnecting != -1)
                 {
-                  if (connect((*i)->fdConnecting, (*i)->addr, (*i)->addrlen) == 0)
+                  if (connect(i->fdConnecting, i->addr, i->addrlen) == 0)
                   {
                     unIndex++;
-                    (*i)->fdSocket = (*i)->fdConnecting;
-                    (*i)->fdConnecting = -1;
-                    if ((*i)->lArg >= 0)
+                    i->fdSocket = i->fdConnecting;
+                    i->fdConnecting = -1;
+                    if (i->lArg >= 0)
                     {
-                      fcntl((*i)->fdSocket, F_SETFL, (*i)->lArg);
+                      fcntl(i->fdSocket, F_SETFL, i->lArg);
                     }
                     ssMessage.str("");
-                    ssMessage << strPrefix << "->connect() [" << (*i)->strName << "]:  Connected to gateway.";
+                    ssMessage << strPrefix << "->connect() [" << i->strName << "]:  Connected to gateway.";
                     gpCentral->log(ssMessage.str(), strError);
                   }
                   else if (errno != EALREADY && errno != EINPROGRESS)
                   {
-                    close((*i)->fdConnecting);
-                    freeaddrinfo((*i)->result);
-                    removals.push_back((*i)->strServer);
+                    close(i->fdConnecting);
+                    freeaddrinfo(i->result);
+                    removals.push_back(i->strServer);
                   }
                 }
                 else
@@ -345,59 +345,59 @@ int main(int argc, char *argv[])
                   memset(&hints, 0, sizeof(addrinfo));
                   hints.ai_family = AF_UNSPEC;
                   hints.ai_socktype = SOCK_STREAM;
-                  if ((nReturn = getaddrinfo((*i)->strServer.c_str(), (*i)->strPort.c_str(), &hints, &((*i)->result))) == 0)
+                  if ((nReturn = getaddrinfo(i->strServer.c_str(), i->strPort.c_str(), &hints, &(i->result))) == 0)
                   {
                     addrinfo *rp;
-                    for (rp = ((*i)->result); !bConnected[1] && rp != NULL; rp = rp->ai_next)
+                    for (rp = (i->result); !bConnected[1] && rp != NULL; rp = rp->ai_next)
                     {
                       bConnected[0] = false;
-                      if (((*i)->fdConnecting = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
+                      if ((i->fdConnecting = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
                       {
                         long lArg;
-                        (*i)->addr = rp->ai_addr;
-                        (*i)->addrlen = rp->ai_addrlen;
-                        if (((*i)->lArg = lArg = fcntl((*i)->fdConnecting, F_GETFL, NULL)) >= 0)
+                        i->addr = rp->ai_addr;
+                        i->addrlen = rp->ai_addrlen;
+                        if ((i->lArg = lArg = fcntl(i->fdConnecting, F_GETFL, NULL)) >= 0)
                         {
                           lArg |= O_NONBLOCK;
-                          fcntl((*i)->fdConnecting, F_SETFL, lArg);
+                          fcntl(i->fdConnecting, F_SETFL, lArg);
                         }
-                        if (connect((*i)->fdConnecting, (*i)->addr, (*i)->addrlen) == 0)
+                        if (connect(i->fdConnecting, i->addr, i->addrlen) == 0)
                         {
                           unIndex++;
-                          (*i)->fdSocket = (*i)->fdConnecting;
-                          (*i)->fdConnecting = -1;
-                          if ((*i)->lArg >= 0)
+                          i->fdSocket = i->fdConnecting;
+                          i->fdConnecting = -1;
+                          if (i->lArg >= 0)
                           {
-                            fcntl((*i)->fdSocket, F_SETFL, (*i)->lArg);
+                            fcntl(i->fdSocket, F_SETFL, i->lArg);
                           }
                           ssMessage.str("");
-                          ssMessage << strPrefix << "->connect() [" << (*i)->strName << "]:  Connected to gateway.";
+                          ssMessage << strPrefix << "->connect() [" << i->strName << "]:  Connected to gateway.";
                           gpCentral->log(ssMessage.str(), strError);
                         }
                         else if (errno != EALREADY && errno != EINPROGRESS)
                         {
-                          close((*i)->fdConnecting);
-                          freeaddrinfo((*i)->result);
-                          removals.push_back((*i)->strServer);
+                          close(i->fdConnecting);
+                          freeaddrinfo(i->result);
+                          removals.push_back(i->strServer);
                         }
                       }
                       else
                       {
-                        freeaddrinfo((*i)->result);
-                        removals.push_back((*i)->strServer);
+                        freeaddrinfo(i->result);
+                        removals.push_back(i->strServer);
                       }
                     }
                   }
                   else
                   {
-                    removals.push_back((*i)->strServer);
+                    removals.push_back(i->strServer);
                   }
                 }
               }
               unIndex += links.size();
-              for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+              for (auto &i : gRouters)
               {
-                if ((*i)->fdSocket != -1)
+                if (i->fdSocket != -1)
                 {
                   unIndex++;
                 }
@@ -416,32 +416,32 @@ int main(int argc, char *argv[])
               fds[unIndex].fd = fdLink;
               fds[unIndex].events = POLLIN;
               unIndex++;
-              for (list<conn *>::iterator i = gConns.begin(); i != gConns.end(); i++)
+              for (auto &i : gConns)
               {
-                if ((*i)->fdSocket != -1)
+                if (i->fdSocket != -1)
                 {
-                  fds[unIndex].fd = (*i)->fdSocket;
+                  fds[unIndex].fd = i->fdSocket;
                   fds[unIndex].events = POLLIN;
-                  if (!(*i)->strBuffer[1].empty())
+                  if (!i->strBuffer[1].empty())
                   {
                     fds[unIndex].events |= POLLOUT;
                   }
                   unIndex++;
                 }
               }
-              for (list<conn *>::iterator i = links.begin(); i != links.end(); i++)
+              for (auto &i : links)
               {
-                fds[unIndex].fd = (*i)->fdSocket;
+                fds[unIndex].fd = i->fdSocket;
                 fds[unIndex].events = POLLIN;
                 unIndex++;
               }
-              for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+              for (auto &i : gRouters)
               {
-                if ((*i)->fdSocket != -1)
+                if (i->fdSocket != -1)
                 {
-                  fds[unIndex].fd = (*i)->fdSocket;
+                  fds[unIndex].fd = i->fdSocket;
                   fds[unIndex].events = POLLIN;
-                  if (!(*i)->strBuffer[1].empty())
+                  if (!i->strBuffer[1].empty())
                   {
                     fds[unIndex].events |= POLLOUT;
                   }
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
                   }
                   // }}}
                   // {{{ routers
-                  for (list<conn *>::iterator j = gRouters.begin(); j != gRouters.end(); j++)
+                  for (auto j = gRouters.begin(); j != gRouters.end(); j++)
                   {
                     if (fds[i].fd == (*j)->fdSocket)
                     {
@@ -512,13 +512,13 @@ int main(int argc, char *argv[])
                                       { 
                                         strAcorn = ptRequest->m["Request"]->m["Acorn"]->v;
                                       }
-                                      for (list<conn *>::iterator k = gConns.begin(); connIter == gConns.end() && k != gConns.end(); k++)
+                                      for (auto k = gConns.begin(); connIter == gConns.end() && k != gConns.end(); k++)
                                       {
                                         if ((*k)->strName == ptRequest->m["Request"]->m["Gateway"]->v)
                                         {
                                           if (!strAcorn.empty())
                                           {
-                                            for (list<string>::iterator l = (*k)->acorns.begin(); connIter == gConns.end() && l != (*k)->acorns.end(); l++)
+                                            for (auto l = (*k)->acorns.begin(); connIter == gConns.end() && l != (*k)->acorns.end(); l++)
                                             {
                                               if ((*l) == strAcorn)
                                               { 
@@ -638,36 +638,36 @@ int main(int argc, char *argv[])
                   }
                   // }}}
                   // {{{ links
-                  for (list<conn *>::iterator j = links.begin(); j != links.end(); j++)
+                  for (auto &j : links)
                   {
-                    if (fds[i].fd == (*j)->fdSocket)
+                    if (fds[i].fd == j->fdSocket)
                     {
                       // {{{ read from link
                       if (fds[i].revents & POLLIN)
                       {
                         bool bCloseLink = false;
-                        if ((*j)->eSocketType == COMMON_SOCKET_UNKNOWN)
+                        if (j->eSocketType == COMMON_SOCKET_UNKNOWN)
                         {   
-                          if (gpCentral->utility()->socketType((*j)->fdSocket, (*j)->eSocketType, strError)) 
+                          if (gpCentral->utility()->socketType(j->fdSocket, j->eSocketType, strError)) 
                           { 
-                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                            if (j->eSocketType == COMMON_SOCKET_ENCRYPTED)
                             {
                               ERR_clear_error();
-                              if (((*j)->ssl = SSL_new(gCtx)) == NULL)
+                              if ((j->ssl = SSL_new(gCtx)) == NULL)
                               {
                                 bCloseLink = true;
                                 ssMessage.str("");
                                 ssMessage << strPrefix << "->SSL_new() error:  " <<  gpCentral->utility()->sslstrerror();
                                 gpCentral->log(ssMessage.str());
                               }
-                              else if (!(SSL_set_fd((*j)->ssl, (*j)->fdSocket)))
+                              else if (!(SSL_set_fd(j->ssl, j->fdSocket)))
                               {
                                 bCloseLink = true;
                                 ssMessage.str("");
                                 ssMessage << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror();
                                 gpCentral->log(ssMessage.str());
                               }
-                              else if ((nReturn = SSL_accept((*j)->ssl)) != 1)
+                              else if ((nReturn = SSL_accept(j->ssl)) != 1)
                               {
                                 bCloseLink = true;
                                 ssMessage.str("");
@@ -684,12 +684,12 @@ int main(int argc, char *argv[])
                             gpCentral->log(ssMessage.str());
                           }
                         }
-                        if (!bCloseLink && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslRead((*j)->ssl, (*j)->strBuffer[0], nReturn)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdRead(fds[i].fd, (*j)->strBuffer[0], nReturn))))
+                        if (!bCloseLink && (((j->eSocketType == COMMON_SOCKET_ENCRYPTED) && gpCentral->utility()->sslRead(j->ssl, j->strBuffer[0], nReturn)) || ((j->eSocketType == COMMON_SOCKET_UNENCRYPTED) && gpCentral->utility()->fdRead(fds[i].fd, j->strBuffer[0], nReturn))))
                         {
-                          if ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
+                          if ((unPosition = j->strBuffer[0].find("\n")) != string::npos)
                           {
-                            ptJson = new Json((*j)->strBuffer[0].substr(0, unPosition));
-                            (*j)->strBuffer[0].erase(0, (unPosition + 1));
+                            ptJson = new Json(j->strBuffer[0].substr(0, unPosition));
+                            j->strBuffer[0].erase(0, (unPosition + 1));
                             if (ptJson->m.find("Password") != ptJson->m.end() && ptJson->m["Password"]->v == gstrPassword)
                             {
                               if (gpSyslog != NULL)
@@ -699,7 +699,7 @@ int main(int argc, char *argv[])
                               if (ptJson->m.find("Server") != ptJson->m.end() && !ptJson->m["Server"]->v.empty())
                               {
                                 list<conn *>::iterator connIter = gRouters.end();
-                                for (list<conn *>::iterator k = gRouters.begin(); connIter == gRouters.end() && k != gRouters.end(); k++)
+                                for (auto k = gRouters.begin(); connIter == gRouters.end() && k != gRouters.end(); k++)
                                 {
                                   if ((*k)->strServer == ptJson->m["Server"]->v)
                                   {
@@ -711,37 +711,37 @@ int main(int argc, char *argv[])
                                   ssMessage.str("");
                                   ssMessage << strPrefix << "->read() [" << ptJson->m["Server"]->v << "]:  Connected to router.";
                                   gpCentral->log(ssMessage.str(), strError);
-                                  (*connIter)->fdSocket = (*j)->fdSocket;
-                                  (*j)->fdSocket = -1;
+                                  (*connIter)->fdSocket = j->fdSocket;
+                                  j->fdSocket = -1;
                                   (*connIter)->strServer = ptJson->m["Server"]->v;
-                                  (*connIter)->strBuffer[0] = (*j)->strBuffer[0];
-                                  for (list<conn *>::iterator k = gConns.begin(); k != gConns.end(); k++)
+                                  (*connIter)->strBuffer[0] = j->strBuffer[0];
+                                  for (auto &k : gConns)
                                   {
                                     Json *ptRequest = new Json;
                                     ptRequest->insert("Password", gstrPassword);
                                     ptRequest->insert("Function", "register");
                                     ptRequest->m["Request"] = new Json;
                                     ptRequest->m["Request"]->insert("Acorn", "gateway");
-                                    ptRequest->m["Request"]->insert("Gateway", (*k)->strName);
-                                    ptRequest->m["Request"]->insert("Server", (*k)->strServer);
-                                    ptRequest->m["Request"]->insert("Port", (*k)->strPort);
+                                    ptRequest->m["Request"]->insert("Gateway", k->strName);
+                                    ptRequest->m["Request"]->insert("Server", k->strServer);
+                                    ptRequest->m["Request"]->insert("Port", k->strPort);
                                     (*connIter)->strBuffer[1].append(ptRequest->json(strJson)+"\n");
                                     delete ptRequest;
                                     ssMessage.str("");
-                                    ssMessage << strPrefix << "->read() [" << ptJson->m["Server"]->v << "," << (*k)->strName << "]:  Sent gateway registration.";
+                                    ssMessage << strPrefix << "->read() [" << ptJson->m["Server"]->v << "," << k->strName << "]:  Sent gateway registration.";
                                     gpCentral->log(ssMessage.str(), strError);
-                                    for (list<string>::iterator l = (*k)->acorns.begin(); l != (*k)->acorns.end(); l++)
+                                    for (auto &l : k->acorns)
                                     {
                                       ptRequest = new Json;
                                       ptRequest->insert("Password", gstrPassword);
                                       ptRequest->insert("Function", "register");
                                       ptRequest->m["Request"] = new Json;
-                                      ptRequest->m["Request"]->insert("Acorn", (*l));
-                                      ptRequest->m["Request"]->insert("Gateway", (*k)->strName);
+                                      ptRequest->m["Request"]->insert("Acorn", l);
+                                      ptRequest->m["Request"]->insert("Gateway", k->strName);
                                       (*connIter)->strBuffer[1].append(ptRequest->json(strJson)+"\n");
                                       delete ptRequest;
                                       ssMessage.str("");
-                                      ssMessage << strPrefix << "->read() [" << ptJson->m["Server"]->v << "," << (*k)->strName << "," << (*l) << "]:  Sent registration.";
+                                      ssMessage << strPrefix << "->read() [" << ptJson->m["Server"]->v << "," << k->strName << "," << l << "]:  Sent registration.";
                                       gpCentral->log(ssMessage.str(), strError);
                                     }
                                   }
@@ -749,21 +749,21 @@ int main(int argc, char *argv[])
                               }
                             }
                             delete ptJson;
-                            linkRemovals.push_back((*j)->fdSocket);
+                            linkRemovals.push_back(j->fdSocket);
                           }
                         }
                         else
                         {
-                          linkRemovals.push_back((*j)->fdSocket);
+                          linkRemovals.push_back(j->fdSocket);
                           if (!bCloseLink)
                           {
-                            if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && SSL_get_error((*j)->ssl, nReturn) != SSL_ERROR_ZERO_RETURN)
+                            if (j->eSocketType == COMMON_SOCKET_ENCRYPTED && SSL_get_error(j->ssl, nReturn) != SSL_ERROR_ZERO_RETURN)
                             {
                               ssMessage.str("");
-                              ssMessage << strPrefix << "->Central::utility()->sslRead(" << SSL_get_error((*j)->ssl, nReturn) << ") error [client]:  " <<  gpCentral->utility()->sslstrerror((*j)->ssl, nReturn);
+                              ssMessage << strPrefix << "->Central::utility()->sslRead(" << SSL_get_error(j->ssl, nReturn) << ") error [client]:  " <<  gpCentral->utility()->sslstrerror(j->ssl, nReturn);
                               gpCentral->log(ssMessage.str(), strError);
                             }
-                            else if ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)
+                            else if (j->eSocketType == COMMON_SOCKET_UNENCRYPTED && nReturn < 0)
                             {
                               ssMessage.str("");
                               ssMessage << strPrefix << "->Central::utility()->read(" << errno << ") error [client]:  " << strerror(errno);
@@ -815,13 +815,13 @@ int main(int argc, char *argv[])
                                           {
                                             strAcorn = ptRequest->m["Request"]->m["Acorn"]->v;
                                           }
-                                          for (list<conn *>::iterator j = gConns.begin(); connIter == gConns.end() && j != gConns.end(); j++)
+                                          for (auto j = gConns.begin(); connIter == gConns.end() && j != gConns.end(); j++)
                                           {
                                             if ((*j)->strName == ptRequest->m["Request"]->m["Gateway"]->v)
                                             {
                                               if (!strAcorn.empty())
                                               {
-                                                for (list<string>::iterator k = (*j)->acorns.begin(); connIter == gConns.end() && k != (*j)->acorns.end(); k++)
+                                                for (auto k = (*j)->acorns.begin(); connIter == gConns.end() && k != (*j)->acorns.end(); k++)
                                                 {
                                                   if ((*k) == strAcorn)
                                                   {
@@ -915,13 +915,13 @@ int main(int argc, char *argv[])
                                     delete ptRequest->m["Response"];
                                   }
                                   ptRequest->m["Response"] = new Json;
-                                  for (list<conn *>::iterator j = gConns.begin(); j != gConns.end(); j++)
+                                  for (auto &j : gConns)
                                   {
-                                    if ((*j)->bEnabled)
+                                    if (j->bEnabled)
                                     {
-                                      for (list<string>::iterator k = (*j)->acorns.begin(); k != (*j)->acorns.end(); k++)
+                                      for (auto &k : j->acorns)
                                       {
-                                        acorns.push_back(*k);
+                                        acorns.push_back(k);
                                       }
                                     }
                                   }
@@ -949,11 +949,11 @@ int main(int argc, char *argv[])
                                   }
                                   ptRequest->m["Response"] = new Json;
                                   ptRequest->m["Response"]->l.push_back(status());
-                                  for (list<conn *>::iterator j = gRouters.begin(); j != gRouters.end(); j++)
+                                  for (auto &j : gRouters)
                                   {
-                                    if ((*j)->ptStatus != NULL)
+                                    if (j->ptStatus != NULL)
                                     {
-                                      ptRequest->m["Response"]->push_back((*j)->ptStatus);
+                                      ptRequest->m["Response"]->push_back(j->ptStatus);
                                     }
                                   }
                                   gstrBuffer[1].append(ptRequest->json(strJson)+"\n");
@@ -978,17 +978,17 @@ int main(int argc, char *argv[])
                             else
                             {
                               list<conn *> conns;
-                              for (list<conn *>::iterator j = gConns.begin(); j != gConns.end(); j++)
+                              for (auto &j : gConns)
                               {
-                                if ((*j)->bEnabled)
+                                if (j->bEnabled)
                                 {
                                   bool bFound = false;
-                                  for (list<string>::iterator k = (*j)->acorns.begin(); !bFound && k != (*j)->acorns.end(); k++)
+                                  for (auto k = j->acorns.begin(); !bFound && k != j->acorns.end(); k++)
                                   {
                                     if ((*k) == ptRequest->m["Acorn"]->v)
                                     {
                                       bFound = true;
-                                      conns.push_back(*j);
+                                      conns.push_back(j);
                                     }
                                   }
                                 }
@@ -1074,19 +1074,19 @@ int main(int argc, char *argv[])
                   }
                   // }}}
                   // {{{ downstream clients
-                  for (list<conn *>::iterator j = gConns.begin(); j != gConns.end(); j++)
+                  for (auto &j : gConns)
                   {
-                    if (fds[i].fd == (*j)->fdSocket)
+                    if (fds[i].fd == j->fdSocket)
                     {
                       // {{{ read from client
                       if (fds[i].revents & POLLIN)
                       {
                         if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
                         {
-                          (*j)->strBuffer[0].append(szBuffer, nReturn);
-                          while ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
+                          j->strBuffer[0].append(szBuffer, nReturn);
+                          while ((unPosition = j->strBuffer[0].find("\n")) != string::npos)
                           {
-                            ptJson = new Json((*j)->strBuffer[0].substr(0, unPosition));
+                            ptJson = new Json(j->strBuffer[0].substr(0, unPosition));
                             if (ptJson->m.find("_AcornPing") != ptJson->m.end())
                             {
                               bool bEnabled = false;
@@ -1102,15 +1102,15 @@ int main(int argc, char *argv[])
                               {
                                 strError = "Encountered an unknown error.";
                               }
-                              if (gateways.find((*j)->strName) != gateways.end())
+                              if (gateways.find(j->strName) != gateways.end())
                               {
-                                gateways.erase((*j)->strName);
+                                gateways.erase(j->strName);
                               }
-                              if ((*j)->bEnabled != bEnabled)
+                              if (j->bEnabled != bEnabled)
                               {
-                                (*j)->bEnabled = bEnabled;
+                                j->bEnabled = bEnabled;
                                 ssMessage.str("");
-                                ssMessage << strPrefix << ((bEnabled)?"":" error") << " [" << gstrName << "," << (*j)->strName << "]:  " << ((bEnabled)?"Enabled":"Disabled") << " gateway.";
+                                ssMessage << strPrefix << ((bEnabled)?"":" error") << " [" << gstrName << "," << j->strName << "]:  " << ((bEnabled)?"Enabled":"Disabled") << " gateway.";
                                 if (!bEnabled)
                                 {
                                   ssMessage << "  " << strError;
@@ -1120,15 +1120,15 @@ int main(int argc, char *argv[])
                             }
                             else
                             {
-                              gstrBuffer[1].append((*j)->strBuffer[0].substr(0, (unPosition + 1)));
+                              gstrBuffer[1].append(j->strBuffer[0].substr(0, (unPosition + 1)));
                             }
-                            (*j)->strBuffer[0].erase(0, (unPosition + 1));
+                            j->strBuffer[0].erase(0, (unPosition + 1));
                             delete ptJson;
                           }
                         }
                         else
                         {
-                          removals.push_back((*j)->strServer);
+                          removals.push_back(j->strServer);
                           if (nReturn < 0)
                           {
                             ssMessage.str("");
@@ -1141,13 +1141,13 @@ int main(int argc, char *argv[])
                       // {{{ write to client
                       if (fds[i].revents & POLLOUT)
                       {
-                        if ((nReturn = write(fds[i].fd, (*j)->strBuffer[1].c_str(), (*j)->strBuffer[1].size())) > 0)
+                        if ((nReturn = write(fds[i].fd, j->strBuffer[1].c_str(), j->strBuffer[1].size())) > 0)
                         {
-                          (*j)->strBuffer[1].erase(0, nReturn);
+                          j->strBuffer[1].erase(0, nReturn);
                         }
                         else
                         {
-                          removals.push_back((*j)->strServer);
+                          removals.push_back(j->strServer);
                           if (nReturn < 0)
                           {
                             ssMessage.str("");
@@ -1171,12 +1171,12 @@ int main(int argc, char *argv[])
               }
               delete[] fds;
               // {{{ remove links
-              for (list<int>::iterator i = linkRemovals.begin(); i != linkRemovals.end(); i++)
+              for (auto &i : linkRemovals)
               {
                 list<conn *>::iterator linksIter = links.end();
-                for (list<conn *>::iterator j = links.begin(); linksIter == links.end() && j != links.end(); j++)
+                for (auto j = links.begin(); linksIter == links.end() && j != links.end(); j++)
                 {
-                  if ((*i) == (*j)->fdSocket)
+                  if (i == (*j)->fdSocket)
                   {
                     linksIter = j;
                   }
@@ -1199,12 +1199,12 @@ int main(int argc, char *argv[])
               linkRemovals.clear();
               // }}}
               // {{{ remove connections
-              for (list<string>::iterator i = removals.begin(); i != removals.end(); i++)
+              for (auto &i : removals)
               {
                 list<conn *>::iterator connsIter = gConns.end();
-                for (list<conn *>::iterator j = gConns.begin(); connsIter == gConns.end() && j != gConns.end(); j++)
+                for (auto j = gConns.begin(); connsIter == gConns.end() && j != gConns.end(); j++)
                 {
-                  if ((*i) == (*j)->strServer)
+                  if (i == (*j)->strServer)
                   {
                     connsIter = j;
                   }
@@ -1217,22 +1217,22 @@ int main(int argc, char *argv[])
               removals.clear();
               // }}}
               // {{{ close routers
-              for (list<list<conn *>::iterator>::iterator i = routerClosures.begin(); i != routerClosures.end(); i++)
+              for (auto &i : routerClosures)
               {
-                if ((*(*i))->fdSocket != -1)
+                if ((*i)->fdSocket != -1)
                 {
                   ssMessage.str("");
-                  ssMessage << strPrefix << "->close() [" << (*(*i))->strServer << "]:  Disconnected from router." << endl;
+                  ssMessage << strPrefix << "->close() [" << (*i)->strServer << "]:  Disconnected from router." << endl;
                   gpCentral->log(ssMessage.str(), strError);
-                  close((*(*i))->fdSocket);
-                  (*(*i))->fdSocket = -1;
+                  close((*i)->fdSocket);
+                  (*i)->fdSocket = -1;
                 }
-                (*(*i))->strBuffer[0].clear();
-                (*(*i))->strBuffer[1].clear();
-                if ((*(*i))->ptStatus != NULL)
+                (*i)->strBuffer[0].clear();
+                (*i)->strBuffer[1].clear();
+                if ((*i)->ptStatus != NULL)
                 {
-                  delete (*(*i))->ptStatus;
-                  (*(*i))->ptStatus = NULL;
+                  delete (*i)->ptStatus;
+                  (*i)->ptStatus = NULL;
                 }
               }
               routerClosures.clear();
@@ -1246,43 +1246,43 @@ int main(int argc, char *argv[])
                 ptJson->insert("Password", gstrPassword);
                 ptJson->insert("Function", "status");
                 ptJson->m["Request"] = status();
-                for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+                for (auto &i : gRouters)
                 {
-                  if ((*i)->fdSocket != -1)
+                  if (i->fdSocket != -1)
                   {
-                    (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+                    i->strBuffer[1].append(ptJson->json(strJson)+"\n");
                   }
                 }
                 delete ptJson;
                 // }}}
                 // {{{ ping gateways
-                for (list<conn *>::iterator i = gConns.begin(); i != gConns.end(); i++)
+                for (auto &i : gConns)
                 {
-                  if ((*i)->fdSocket != -1)
+                  if (i->fdSocket != -1)
                   {
-                    if (gateways.find((*i)->strName) != gateways.end())
+                    if (gateways.find(i->strName) != gateways.end())
                     {
-                      if ((CTime[1] - gateways[(*i)->strName]) > 5)
+                      if ((CTime[1] - gateways[i->strName]) > 5)
                       {
-                        gateways.erase((*i)->strName);
-                        if ((*i)->bEnabled)
+                        gateways.erase(i->strName);
+                        if (i->bEnabled)
                         {
-                          (*i)->bEnabled = false;
+                          i->bEnabled = false;
                           ssMessage.str("");
-                          ssMessage << strPrefix << " error [" << gstrName << "," << (*i)->strName << "]:  Disabled gateway.  Timeout expired.";
+                          ssMessage << strPrefix << " error [" << gstrName << "," << i->strName << "]:  Disabled gateway.  Timeout expired.";
                           gpCentral->log(ssMessage.str(), strError);
                         }
                       }
                     }
-                    if (gateways.find((*i)->strName) == gateways.end())
+                    if (gateways.find(i->strName) == gateways.end())
                     {
                       ptJson = new Json;
-                      gateways[(*i)->strName] = CTime[1];
-                      ptJson->insert("_AcornPing", (*i)->strName);
+                      gateways[i->strName] = CTime[1];
+                      ptJson->insert("_AcornPing", i->strName);
                       ptJson->insert("_AcornRouter", gstrName);
                       ptJson->insert("Acorn", "ping");
                       ptJson->insert("reqApp", gstrApplication);
-                      (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+                      i->strBuffer[1].append(ptJson->json(strJson)+"\n");
                       delete ptJson;
                     }
                   }
@@ -1384,7 +1384,7 @@ bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const st
     if (strAcorn != "gateway")
     {
       list<string>::iterator acornIter = (*connIter)->acorns.end();
-      for (list<string>::iterator i = (*connIter)->acorns.begin(); acornIter == (*connIter)->acorns.end() && i != (*connIter)->acorns.end(); i++)
+      for (auto i = (*connIter)->acorns.begin(); acornIter == (*connIter)->acorns.end() && i != (*connIter)->acorns.end(); i++)
       {
         if ((*i) == strAcorn)
         {
@@ -1398,9 +1398,9 @@ bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const st
         ssMessage << strPrefix << "[" << (*connIter)->strName << "," << (*acornIter) << "]:  Deregistered.";
         gpCentral->log(ssMessage.str(), strError);
         (*connIter)->acorns.erase(acornIter);
-        for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+        for (auto &i : gRouters)
         {
-          if ((*i)->fdSocket != -1)
+          if (i->fdSocket != -1)
           {
             ptJson = new Json;
             ptJson->insert("Password", gstrPassword);
@@ -1408,7 +1408,7 @@ bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const st
             ptJson->m["Request"] = new Json;
             ptJson->m["Request"]->insert("Gateway", (*connIter)->strName);
             ptJson->m["Request"]->insert("Acorn", strAcorn);
-            (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+            i->strBuffer[1].append(ptJson->json(strJson)+"\n");
             delete ptJson;
           }
         }
@@ -1439,9 +1439,9 @@ bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const st
         gpCentral->log(ssMessage.str(), strError);
       }
       (*connIter)->acorns.clear();
-      for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+      for (auto &i : gRouters)
       {
-        if ((*i)->fdSocket != -1)
+        if (i->fdSocket != -1)
         {
           ptJson = new Json;
           ptJson->insert("Password", gstrPassword);
@@ -1449,7 +1449,7 @@ bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const st
           ptJson->m["Request"] = new Json;
           ptJson->m["Request"]->insert("Gateway", (*connIter)->strName);
           ptJson->m["Request"]->insert("Acorn", strAcorn);
-          (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+          i->strBuffer[1].append(ptJson->json(strJson)+"\n");
           delete ptJson;
         }
       }
@@ -1481,7 +1481,7 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
   Json *ptJson;
 
   strPrefix += "->acornRegister()";
-  for (list<conn *>::iterator i = gConns.begin(); connIter == gConns.end() && i != gConns.end(); i++)
+  for (auto i = gConns.begin(); connIter == gConns.end() && i != gConns.end(); i++)
   {
     if ((*i)->strName == strName)
     {
@@ -1493,7 +1493,7 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
     if (strAcorn != "gateway")
     {
       bool bFound = false;
-      for (list<string>::iterator i = (*connIter)->acorns.begin(); !bFound && i != (*connIter)->acorns.end(); i++)
+      for (auto i = (*connIter)->acorns.begin(); !bFound && i != (*connIter)->acorns.end(); i++)
       {
         if ((*i) == strAcorn)
         {
@@ -1508,9 +1508,9 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
         ssMessage.str("");
         ssMessage << strPrefix << " [" << (*connIter)->strName << "," << strAcorn << "]:  Registered.";
         gpCentral->log(ssMessage.str(), strError);
-        for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+        for (auto &i : gRouters)
         {
-          if ((*i)->fdSocket != -1)
+          if (i->fdSocket != -1)
           {
             ptJson = new Json;
             ptJson->insert("Password", gstrPassword);
@@ -1518,7 +1518,7 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
             ptJson->m["Request"] = new Json;
             ptJson->m["Request"]->insert("Gateway", (*connIter)->strName);
             ptJson->m["Request"]->insert("Acorn", strAcorn);
-            (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+            i->strBuffer[1].append(ptJson->json(strJson)+"\n");
             delete ptJson;
           }
         }
@@ -1558,9 +1558,9 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
           ssMessage.str("");
           ssMessage << strPrefix << " [" << strName << "]:  Registered gateway.";
           gpCentral->log(ssMessage.str(), strError);
-          for (list<conn *>::iterator i = gRouters.begin(); i != gRouters.end(); i++)
+          for (auto &i : gRouters)
           {
-            if ((*i)->fdSocket != -1)
+            if (i->fdSocket != -1)
             {
               ptJson = new Json;
               ptJson->insert("Password", gstrPassword);
@@ -1570,7 +1570,7 @@ bool acornRegister(string strPrefix, const string strAcorn, const string strName
               ptJson->m["Request"]->insert("Acorn", strAcorn);
               ptJson->m["Request"]->insert("Server", strServer);
               ptJson->m["Request"]->insert("Port", strPort);
-              (*i)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+              i->strBuffer[1].append(ptJson->json(strJson)+"\n");
               delete ptJson;
             }
           }
@@ -1740,22 +1740,22 @@ Json *status()
   if (!gConns.empty())
   {
     ptStatus->m["Gateways"] = new Json;
-    for (list<conn *>::iterator i = gConns.begin(); i != gConns.end(); i++)
+    for (auto &i : gConns)
     {
       ptJson = new Json;
-      ptJson->insert("Name", (*i)->strName);
-      ptJson->insert("Acorns", (*i)->acorns);
+      ptJson->insert("Name", i->strName);
+      ptJson->insert("Acorns", i->acorns);
       ptJson->m["Buffers"] = new Json;
       ssMessage.str("");
-      ssMessage << (*i)->strBuffer[0].size();
+      ssMessage << i->strBuffer[0].size();
       ptJson->m["Buffers"]->insert("Input", ssMessage.str(), 'n');
       ssMessage.str("");
-      ssMessage << (*i)->strBuffer[1].size();
+      ssMessage << i->strBuffer[1].size();
       ptJson->m["Buffers"]->insert("Output", ssMessage.str(), 'n');
-      ptJson->insert("Connected", (((*i)->fdSocket != -1)?"1":"0"), (((*i)->fdSocket != -1)?'1':'0'));
-      ptJson->insert("Enabled", (((*i)->bEnabled)?"1":"0"), (((*i)->bEnabled)?'1':'0'));
-      ptJson->insert("Port", (*i)->strPort, 'n');
-      ptJson->insert("Server", (*i)->strServer);
+      ptJson->insert("Connected", ((i->fdSocket != -1)?"1":"0"), ((i->fdSocket != -1)?'1':'0'));
+      ptJson->insert("Enabled", ((i->bEnabled)?"1":"0"), ((i->bEnabled)?'1':'0'));
+      ptJson->insert("Port", i->strPort, 'n');
+      ptJson->insert("Server", i->strServer);
       ptStatus->m["Gateways"]->push_back(ptJson);
       delete ptJson;
     }

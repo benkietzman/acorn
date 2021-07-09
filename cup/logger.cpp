@@ -188,29 +188,29 @@ int main(int argc, char *argv[])
         }
         // }}}
         // {{{ conns
-        for (list<conn *>::iterator i = conns.begin(); i != conns.end(); i++)
+        for (auto &i : conns)
         {
-          if ((*i)->fdSocket != -1)
+          if (i->fdSocket != -1)
           {
             unIndex++;
           }
-          else if ((*i)->fdConnecting != -1)
+          else if (i->fdConnecting != -1)
           {
-            if (connect((*i)->fdConnecting, (*i)->addr, (*i)->addrlen) == 0)
+            if (connect(i->fdConnecting, i->addr, i->addrlen) == 0)
             {
               unIndex++;
-              (*i)->fdSocket = (*i)->fdConnecting;
-              (*i)->fdConnecting = -1;
-              if ((*i)->lArg >= 0)
+              i->fdSocket = i->fdConnecting;
+              i->fdConnecting = -1;
+              if (i->lArg >= 0)
               {
-                fcntl((*i)->fdSocket, F_SETFL, (*i)->lArg);
+                fcntl(i->fdSocket, F_SETFL, i->lArg);
               }
             }
             else if (errno != EALREADY && errno != EINPROGRESS)
             {
-              close((*i)->fdConnecting);
-              (*i)->fdConnecting = -1;
-              freeaddrinfo((*i)->result);
+              close(i->fdConnecting);
+              i->fdConnecting = -1;
+              freeaddrinfo(i->result);
             }
           }
           else
@@ -219,42 +219,42 @@ int main(int argc, char *argv[])
             memset(&hints, 0, sizeof(addrinfo));
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
-            if ((nReturn = getaddrinfo(gstrServer.c_str(), "5646", &hints, &((*i)->result))) == 0)
+            if ((nReturn = getaddrinfo(gstrServer.c_str(), "5646", &hints, &(i->result))) == 0)
             {
               addrinfo *rp;
-              for (rp = (*i)->result; !bConnected[1] && rp != NULL; rp = rp->ai_next)
+              for (rp = i->result; !bConnected[1] && rp != NULL; rp = rp->ai_next)
               {
                 bConnected[0] = false;
-                if (((*i)->fdConnecting = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
+                if ((i->fdConnecting = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) >= 0)
                 {
                   long lArg;
-                  (*i)->addr = rp->ai_addr;
-                  (*i)->addrlen = rp->ai_addrlen;
-                  if (((*i)->lArg = lArg = fcntl((*i)->fdConnecting, F_GETFL, NULL)) >= 0)
+                  i->addr = rp->ai_addr;
+                  i->addrlen = rp->ai_addrlen;
+                  if ((i->lArg = lArg = fcntl(i->fdConnecting, F_GETFL, NULL)) >= 0)
                   {
                     lArg |= O_NONBLOCK;
-                    fcntl((*i)->fdConnecting, F_SETFL, lArg);
+                    fcntl(i->fdConnecting, F_SETFL, lArg);
                   }
-                  if (connect((*i)->fdConnecting, (*i)->addr, (*i)->addrlen) == 0)
+                  if (connect(i->fdConnecting, i->addr, i->addrlen) == 0)
                   {
                     unIndex++;
-                    (*i)->fdSocket = (*i)->fdConnecting;
-                    (*i)->fdConnecting = -1;
-                    if ((*i)->lArg >= 0)
+                    i->fdSocket = i->fdConnecting;
+                    i->fdConnecting = -1;
+                    if (i->lArg >= 0)
                     {
-                      fcntl(fdSocket, F_SETFL, (*i)->lArg);
+                      fcntl(fdSocket, F_SETFL, i->lArg);
                     }
                   }
                   else if (errno != EALREADY && errno != EINPROGRESS)
                   {
-                    close((*i)->fdConnecting);
-                    (*i)->fdConnecting = -1;
-                    freeaddrinfo((*i)->result);
+                    close(i->fdConnecting);
+                    i->fdConnecting = -1;
+                    freeaddrinfo(i->result);
                   }
                 }
                 else
                 {
-                  freeaddrinfo((*i)->result);
+                  freeaddrinfo(i->result);
                 }
               }
             }
@@ -282,13 +282,13 @@ int main(int argc, char *argv[])
           }
           unIndex++;
         }
-        for (list<conn *>::iterator i = conns.begin(); i != conns.end(); i++)
+        for (auto &i : conns)
         {
-          if ((*i)->fdSocket != -1)
+          if (i->fdSocket != -1)
           {
-            fds[unIndex].fd = (*i)->fdSocket;
+            fds[unIndex].fd = i->fdSocket;
             fds[unIndex].events = POLLIN;
-            if (!(*i)->strBuffer[1].empty())
+            if (!i->strBuffer[1].empty())
             {
               fds[unIndex].events |= POLLOUT;
             }
@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
             }
             // }}}
             // {{{ conns
-            for (list<conn *>::iterator j = conns.begin(); j != conns.end(); j++)
+            for (auto j = conns.begin(); j != conns.end(); j++)
             {
               if ((*j)->fdSocket != -1 && fds[i].fd == (*j)->fdSocket)
               {
@@ -516,10 +516,10 @@ int main(int argc, char *argv[])
         // {{{ conns
         if (!removals.empty())
         {
-          for (list<conn *>::iterator i = conns.begin(); i != conns.end(); i++)
+          for (auto i = conns.begin(); i != conns.end(); i++)
           {
             bool bFound = false;
-            for (list<list<conn *>::iterator>::iterator j = removals.begin(); !bFound && j != removals.end(); j++)
+            for (auto j = removals.begin(); !bFound && j != removals.end(); j++)
             {
               if (i == (*j))
               {

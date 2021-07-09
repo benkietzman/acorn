@@ -504,11 +504,11 @@ int main(int argc, char *argv[], char *env[])
               }
               if (bExternal)
               {
-                for (list<conn *>::iterator i = conns.begin(); i != conns.end(); i++)
+                for (auto &i : conns)
                 {
-                  fds[unIndex].fd = (*i)->fdSocket;
+                  fds[unIndex].fd = i->fdSocket;
                   fds[unIndex].events = POLLIN;
-                  if (!(*i)->strBuffer[1].empty())
+                  if (!i->strBuffer[1].empty())
                   {
                     fds[unIndex].events |= POLLOUT;
                   }
@@ -536,7 +536,7 @@ int main(int argc, char *argv[], char *env[])
                             bool bDebugFound = false;
                             timespec stop;
                             clock_gettime(CLOCK_REALTIME, &stop);
-                            for (list<Json *>::iterator j = ptResponse->m["acornDebug"]->l.begin(); !bDebugFound && j != ptResponse->m["acornDebug"]->l.end(); j++)
+                            for (auto j = ptResponse->m["acornDebug"]->l.begin(); !bDebugFound && j != ptResponse->m["acornDebug"]->l.end(); j++)
                             {
                               if ((*j)->m.find("Cup") != (*j)->m.end() && (*j)->m["Cup"]->v == gstrCup)
                               {
@@ -576,7 +576,7 @@ int main(int argc, char *argv[], char *env[])
                               string strUnique = ptResponse->m[ssKey.str()]->v;
                               delete ptResponse->m[ssKey.str()];
                               ptResponse->m.erase(ssKey.str());
-                              for (list<conn *>::iterator j = conns.begin(); !bFound && j != conns.end(); j++)
+                              for (auto j = conns.begin(); !bFound && j != conns.end(); j++)
                               {
                                 if ((*j)->ssUnique.str() == strUnique)
                                 {
@@ -654,7 +654,7 @@ int main(int argc, char *argv[], char *env[])
                           while (bFound)
                           {
                             bFound = false;
-                            for (list<conn *>::iterator j = conns.begin(); !bFound && j != conns.end(); j++)
+                            for (auto j = conns.begin(); !bFound && j != conns.end(); j++)
                             {
                               if ((*j)->unUnique == unUnique)
                               {
@@ -852,7 +852,7 @@ int main(int argc, char *argv[], char *env[])
                   else if (bExternal)
                   {
                     bool bFound = false;
-                    for (list<conn *>::iterator j = conns.begin(); !bFound && j != conns.end(); j++)
+                    for (auto j = conns.begin(); !bFound && j != conns.end(); j++)
                     {
                       if (fds[i].fd == (*j)->fdSocket)
                       {
@@ -1011,12 +1011,12 @@ int main(int argc, char *argv[], char *env[])
                 close(fdLogger);
                 fdLogger = -1;
               }
-              for (list<int>::iterator i = removals.begin(); i != removals.end(); i++)
+              for (auto &i : removals)
               {
                 list<conn *>::iterator connsIter = conns.end();
-                for (list<conn *>::iterator j = conns.begin(); connsIter == conns.end() && j != conns.end(); j++)
+                for (auto j = conns.begin(); connsIter == conns.end() && j != conns.end(); j++)
                 {
-                  if ((*i) == (*j)->fdSocket)
+                  if (i == (*j)->fdSocket)
                   {
                     connsIter = j;
                   }

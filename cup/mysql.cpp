@@ -210,12 +210,12 @@ int main(int argc, char *argv[])
           CTime[1] = CTime[2];
           gpMysql->lock();
           pConn = gpMysql->conn();
-          for (map<string, list<acorn_mysql *> >::iterator i = pConn->begin(); i != pConn->end(); i++)
+          for (auto &i : *pConn)
           {
             vector<string> keys;
-            size_t unConnections = i->second.size(), unQueued = 0;
+            size_t unConnections = i.second.size(), unQueued = 0;
             string strToken;
-            stringstream ssName(i->first);
+            stringstream ssName(i.first);
             while (getline(ssName, strToken, '|'))
             {
               keys.push_back(strToken);
@@ -233,9 +233,9 @@ int main(int argc, char *argv[])
                 ssMessage << keys[j];
               }
             }
-            for (list<acorn_mysql *>::iterator j = i->second.begin(); j != i->second.end(); j++)
+            for (auto &j : i.second)
             {
-              unQueued += (*j)->unThreads;
+              unQueued += j->unThreads;
             }
             ssMessage << "]:  STATUS - " << unQueued << " queued across " << unConnections << " connections.";
             gpCentral->log(ssMessage.str(), strError);
@@ -357,9 +357,9 @@ bool mysql(const string strType, const string strUser, const string strPassword,
 
   if (rows != NULL)
   {
-    for (list<map<string, string> >::iterator i = rows->begin(); i != rows->end(); i++)
+    for (auto &i : *rows)
     {
-      i->clear();
+      i.clear();
     }
     rows->clear();
   }
@@ -452,9 +452,9 @@ void request(Json *ptJson)
                 if (!result->empty())
                 {
                   ptJson->m["Response"] = new Json;
-                  for (list<map<string, string> >::iterator i = result->begin(); i != result->end(); i++)
+                  for (auto &i : *result)
                   {
-                    ptJson->m["Response"]->push_back(*i);
+                    ptJson->m["Response"]->push_back(i);
                   }
                 }
                 else
@@ -462,9 +462,9 @@ void request(Json *ptJson)
                   strError = "No rows returned.";
                 }
               }
-              for (list<map<string, string> >::iterator i = result->begin(); i != result->end(); i++)
+              for (auto &i : *result)
               {
-                i->clear();
+                i.clear();
               }
               result->clear();
               delete result;

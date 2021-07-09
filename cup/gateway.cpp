@@ -259,11 +259,11 @@ int main(int argc, char *argv[])
                 fds[unIndex].fd = fdUnix;
                 fds[unIndex].events = POLLIN;
                 unIndex++;
-                for (list<conn *>::iterator i = conns.begin(); i != conns.end(); i++)
+                for (auto &i : conns)
                 {
-                  fds[unIndex].fd = (*i)->fdSocket;
+                  fds[unIndex].fd = i->fdSocket;
                   fds[unIndex].events = POLLIN;
-                  if (!(*i)->strBuffer[1].empty())
+                  if (!i->strBuffer[1].empty())
                   {
                     fds[unIndex].events |= POLLOUT;
                   }
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
                             if (ptRequest->m.find("Acorn") != ptRequest->m.end() && !ptRequest->m["Acorn"]->v.empty())
                             {
                               list<conn *>::iterator connIter = conns.end();
-                              for (list<conn *>::iterator j = conns.begin(); connIter == conns.end() && j != conns.end(); j++)
+                              for (auto j = conns.begin(); connIter == conns.end() && j != conns.end(); j++)
                               {
                                 if ((*j)->strName == ptRequest->m["Acorn"]->v)
                                 {
@@ -389,24 +389,24 @@ int main(int argc, char *argv[])
                     }
                     // }}}
                     // {{{ downstream clients
-                    for (list<conn *>::iterator j = conns.begin(); j != conns.end(); j++)
+                    for (auto &j : conns)
                     {
-                      if (fds[i].fd == (*j)->fdSocket)
+                      if (fds[i].fd == j->fdSocket)
                       {
                         // {{{ read from client
                         if (fds[i].revents & POLLIN)
                         {
                           if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
                           {
-                            (*j)->strBuffer[0].append(szBuffer, nReturn);
-                            while ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
+                            j->strBuffer[0].append(szBuffer, nReturn);
+                            while ((unPosition = j->strBuffer[0].find("\n")) != string::npos)
                             {
-                              ptJson = new Json((*j)->strBuffer[0].substr(0, unPosition));
+                              ptJson = new Json(j->strBuffer[0].substr(0, unPosition));
                               if (ptJson->m.find("_AcornFunction") != ptJson->m.end())
                               {
                                 if (ptJson->m["_AcornFunction"]->v == "deregister")
                                 {
-                                  if (acornDeregister(strPrefix, (*j), strError))
+                                  if (acornDeregister(strPrefix, j, strError))
                                   {
                                     ptJson->insert("Status", "okay");
                                   }
@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
                                 {
                                   if (ptJson->m.find("_AcornName") != ptJson->m.end() && !ptJson->m["_AcornName"]->v.empty())
                                   {
-                                    if (acornRegister(strPrefix, (*j), ptJson->m["_AcornName"]->v, strError))
+                                    if (acornRegister(strPrefix, j, ptJson->m["_AcornName"]->v, strError))
                                     {
                                       ptJson->insert("Status", "okay");
                                     }
@@ -440,19 +440,19 @@ int main(int argc, char *argv[])
                                   ptJson->insert("Status", "error");
                                   ptJson->insert("Error", "Please provide a valid _AcornFunction:  deregister, register.");
                                 }
-                                (*j)->strBuffer[1].append(ptJson->json(strJson)+"\n");
+                                j->strBuffer[1].append(ptJson->json(strJson)+"\n");
                               }
                               else
                               {
-                                strBuffer[1].append((*j)->strBuffer[0].substr(0, (unPosition + 1)));
+                                strBuffer[1].append(j->strBuffer[0].substr(0, (unPosition + 1)));
                               }
-                              (*j)->strBuffer[0].erase(0, (unPosition + 1));
+                              j->strBuffer[0].erase(0, (unPosition + 1));
                               delete ptJson;
                             }
                           }
                           else
                           {
-                            removals.push_back((*j)->fdSocket);
+                            removals.push_back(j->fdSocket);
                             if (nReturn < 0)
                             {
                               ssMessage.str("");
@@ -465,13 +465,13 @@ int main(int argc, char *argv[])
                         // {{{ write to client
                         if (fds[i].revents & POLLOUT)
                         {
-                          if ((nReturn = write(fds[i].fd, (*j)->strBuffer[1].c_str(), (*j)->strBuffer[1].size())) > 0)
+                          if ((nReturn = write(fds[i].fd, j->strBuffer[1].c_str(), j->strBuffer[1].size())) > 0)
                           {
-                            (*j)->strBuffer[1].erase(0, nReturn);
+                            j->strBuffer[1].erase(0, nReturn);
                           }
                           else
                           {
-                            removals.push_back((*j)->fdSocket);
+                            removals.push_back(j->fdSocket);
                             if (nReturn < 0)
                             {
                               ssMessage.str("");
@@ -494,12 +494,12 @@ int main(int argc, char *argv[])
                   gpCentral->log(ssMessage.str(), strError);
                 }
                 delete[] fds;
-                for (list<int>::iterator i = removals.begin(); i != removals.end(); i++)
+                for (auto &i : removals)
                 {
                   list<conn *>::iterator connsIter = conns.end();
-                  for (list<conn *>::iterator j = conns.begin(); connsIter == conns.end() && j != conns.end(); j++)
+                  for (auto j = conns.begin(); connsIter == conns.end() && j != conns.end(); j++)
                   {
-                    if ((*i) == (*j)->fdSocket)
+                    if (i == (*j)->fdSocket)
                     {
                       connsIter = j;
                     }
