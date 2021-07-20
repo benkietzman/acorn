@@ -101,17 +101,29 @@ extern "C++"
           acorn_mysql *ptMysql = new acorn_mysql;
           if ((ptMysql->conn = mysql_init(NULL)) != NULL)
           {
+            bool bRetry;
+            size_t unAttempt = 0;
             unsigned int unTimeout = 2;
             mysql_options(ptMysql->conn, MYSQL_OPT_CONNECT_TIMEOUT, &unTimeout);
-            if (mysql_real_connect(ptMysql->conn, strServer.c_str(), strUser.c_str(), strPassword.c_str(), strDatabase.c_str(), unPort, NULL, 0) != NULL)
+            do
             {
-              bConnected = true;
-            }
-            else
+              if (mysql_real_connect(ptMysql->conn, strServer.c_str(), strUser.c_str(), strPassword.c_str(), strDatabase.c_str(), unPort, NULL, 0) != NULL)
+              {
+                bConnected = true;
+              }
+              else
+              {
+                ssError.str("");
+                ssError << "mysql_real_connect(" << mysql_errno(ptMysql->conn) << ") [" << strServer << "," << strUser << "," << strDatabase << "]:  " << mysql_error(ptMysql->conn);
+                strError = ssError.str();
+                if (mysql_errno(ptMysql->conn) == 2026)
+                {
+                  bRetry = true;
+                }
+              }
+            } while (bRetry && unAttempt++ < 10);
+            if (!bConnected)
             {
-              ssError.str("");
-              ssError << "mysql_real_connect(" << mysql_errno(ptMysql->conn) << ") [" << strServer << "," << strUser << "," << strDatabase << "]:  " << mysql_error(ptMysql->conn);
-              strError = ssError.str();
               mysql_close(ptMysql->conn);
             }
           }
