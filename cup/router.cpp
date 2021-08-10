@@ -1238,7 +1238,7 @@ int main(int argc, char *argv[])
               routerClosures.clear();
               // }}}
               time(&(CTime[1]));
-              if ((CTime[1] - CTime[0]) >= 10)
+              if ((CTime[1] - CTime[0]) >= 5)
               {
                 CTime[0] = CTime[1];
                 // {{{ send status
@@ -1262,7 +1262,7 @@ int main(int argc, char *argv[])
                   {
                     if (gateways.find(i->strName) != gateways.end())
                     {
-                      if ((CTime[1] - gateways[i->strName]) > 5)
+                      if ((CTime[1] - gateways[i->strName]) > 30)
                       {
                         gateways.erase(i->strName);
                         if (i->bEnabled)

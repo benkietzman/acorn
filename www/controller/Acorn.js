@@ -158,7 +158,7 @@ controllers.Home = function ($http, $interval, $location, $scope, acorn, common)
   var getStatus = $interval(function()
   {
     $scope.getStatus();
-  }, 10000);
+  }, 5000);
   $scope.$on('$destroy', function ()
   {
     $interval.cancel(getStatus);
