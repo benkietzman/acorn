@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 {
   string strError, strPrefix = "main()";
   stringstream ssMessage;
- 
+
   if (initialize(strPrefix, argc, argv, strError))
   {
     if (!gstrData.empty())
@@ -204,9 +204,9 @@ string escape(const string strIn, string &strOut)
 {
   size_t unSize = strIn.size();
   stringstream ssResult;
-  
+
   for (size_t i = 0; i < unSize; i++)
-  { 
+  {
     switch (strIn[i])
     {
       case 0    : ssResult << "\\0";  break;
@@ -218,7 +218,7 @@ string escape(const string strIn, string &strOut)
       default   : ssResult << strIn[i];
     };
   }
-  
+
   return (strOut = ssResult.str());
 }
 // }}}
@@ -226,7 +226,7 @@ string escape(const string strIn, string &strOut)
 bool initialize(string strPrefix, int argc, char *argv[], string &strError)
 {
   bool bResult = false;
-  
+
   gpCentral = new Central(strError);
   if (strError.empty())
   {
@@ -239,10 +239,10 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
     sigignore(SIGPIPE);
     sigignore(SIGSEGV);
     sigignore(SIGWINCH);
-    // }}} 
+    // }}}
     // {{{ command line arguments
     for (int i = 1; i < argc; i++)
-    {   
+    {
       string strArg = argv[i];
       if (strArg == "-c" || (strArg.size() > 7 && strArg.substr(0, 7) == "--conf="))
       {
@@ -259,7 +259,7 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
         gpCentral->manip()->purgeChar(strConf, strConf, "\"");
         gpCentral->utility()->setConfPath(strConf, strError);
         gpCentral->acorn()->utility()->setConfPath(strConf, strError);
-      } 
+      }
       else if (strArg == "-d" || (strArg.size() > 7 && strArg.substr(0, 7) == "--data="))
       {
         if (strArg == "-d" && i + 1 < argc && argv[i+1][0] != '-')
@@ -332,172 +332,146 @@ void request(Json *ptJson)
               inFile.close();
               if (ptConf != NULL)
               {
-                bool bBridge = false;
-                if (ptJson->m["Function"]->v == "verify" && ptConf->m.find("Bridge Password") != ptConf->m.end() && !ptConf->m["Bridge Password"]->v.empty() && ptConf->m.find("Bridge Port") != ptConf->m.end() && !ptConf->m["Bridge Port"]->v.empty() && ptConf->m.find("Bridge Server") != ptConf->m.end() && !ptConf->m["Bridge Server"]->v.empty() && ptConf->m.find("Bridge User") != ptConf->m.end() && !ptConf->m["Bridge User"]->v.empty())
+                if (ptConf->m.find("Database") != ptConf->m.end() && !ptConf->m["Database"]->v.empty() && ptConf->m.find("Database Password") != ptConf->m.end() && !ptConf->m["Database Password"]->v.empty() && ptConf->m.find("Database Server") != ptConf->m.end() && !ptConf->m["Database Server"]->v.empty() && ptConf->m.find("Database User") != ptConf->m.end() && !ptConf->m["Database User"]->v.empty())
                 {
-                  Bridge bridge(strError);
-                  bridge.setCredentials(ptConf->m["Bridge User"]->v, ptConf->m["Bridge Password"]->v);
-                  if (strError.empty())
-                  { 
-                    bBridge = true;
-                    if (bridge.passwordVerify(ptJson->m["Application"]->v, ptJson->m["Type"]->v, ptJson->m["User"]->v, ptJson->m["Password"]->v, strError))
-                    {
-                      bProcessed = true;
-                    }
-                    else if (strError == "Bridge request failed without returning an error message.")
-                    {
-                      bBridge = false;
-                    }
-                  }
-                }
-                if (!bBridge)
-                {
-                  if (ptConf->m.find("Database") != ptConf->m.end() && !ptConf->m["Database"]->v.empty())
+                  list<map<string, string> > getAccount;
+                  string strValue;
+                  stringstream ssQuery;
+                  ssQuery << "select b.aes, b.encrypt, b.id, b.password";
+                  if (ptConf->m.find("Aes") != ptConf->m.end() && !ptConf->m["Aes"]->v.empty())
                   {
-                    if (ptConf->m.find("Database Password") != ptConf->m.end() && !ptConf->m["Database Password"]->v.empty())
+                    ssQuery << ", aes_decrypt(from_base64(b.password), sha2('" << escape(ptConf->m["Aes"]->v, strValue) << "', 512)) decrypted_password";
+                  }
+                  ssQuery << ", c.type from application a, application_account b, account_type c where a.id=b.application_id and b.type_id = c.id and a.name = '" << escape(ptJson->m["Application"]->v, strValue) << "' and b.user_id = '" << escape(ptJson->m["User"]->v, strValue) << "'";
+                  if (ptJson->m.find("Type") != ptJson->m.end() && !ptJson->m["Type"]->v.empty())
+                  {
+                    ssQuery << " and c.type = '" << escape(ptJson->m["Type"]->v, strValue) << "'";
+                  }
+                  if (gpCentral->acorn()->mysqlQuery(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), getAccount, strError))
+                  {
+                    if (getAccount.size() == 1)
                     {
-                      if (ptConf->m.find("Database Server") != ptConf->m.end() && !ptConf->m["Database Server"]->v.empty())
+                      bool bVerified = false;
+                      map<string, string> getAccountRow = getAccount.front();
+                      if (getAccountRow["encrypt"] == "1")
                       {
-                        if (ptConf->m.find("Database User") != ptConf->m.end() && !ptConf->m["Database User"]->v.empty())
+                        list<map<string, string> > getAccountID;
+                        ssQuery.str("");
+                        ssQuery << "select id from application_account where id = " << getAccountRow["id"] << " and `password` = concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Password"]->v, strValue) << "')))))";
+                        if (gpCentral->acorn()->mysqlQuery(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), getAccountID, strError))
                         {
-                          list<map<string, string> > getAccount;
-                          string strValue;
-                          stringstream ssQuery;
-                          ssQuery << "select b.aes, b.encrypt, b.id, b.password";
-                          if (ptConf->m.find("Aes") != ptConf->m.end() && !ptConf->m["Aes"]->v.empty())
+                          if (!getAccountID.empty())
                           {
-                            ssQuery << ", aes_decrypt(from_base64(b.password), sha2('" << escape(ptConf->m["Aes"]->v, strValue) << "', 512)) decrypted_password";
+                            bVerified = true;
                           }
-                          ssQuery << ", c.type from application a, application_account b, account_type c where a.id=b.application_id and b.type_id = c.id and a.name = '" << escape(ptJson->m["Application"]->v, strValue) << "' and b.user_id = '" << escape(ptJson->m["User"]->v, strValue) << "'";
-                          if (ptJson->m.find("Type") != ptJson->m.end() && !ptJson->m["Type"]->v.empty())
+                        }
+                        getAccountID.clear();
+                      }
+                      else if (getAccountRow["aes"] == "1")
+                      {
+                        if (getAccountRow.find("decrypted_password") != getAccountRow.end() && getAccountRow["decrypted_password"] == ptJson->m["Password"]->v)
+                        {
+                          bVerified = true;
+                        }
+                      }
+                      else if (getAccountRow["password"] == ptJson->m["Password"]->v)
+                      {
+                        bVerified = true;
+                      }
+                      if (bVerified)
+                      {
+                        if (ptJson->m["Function"]->v == "delete")
+                        {
+                          ssQuery.str("");
+                          ssQuery << "delete from application_account where id = " << getAccountRow["id"];
+                          if (gpCentral->acorn()->mysqlUpdate(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), strError))
                           {
-                            ssQuery << " and c.type = '" << escape(ptJson->m["Type"]->v, strValue) << "'";
-                          }
-                          if (gpCentral->acorn()->mysqlQuery(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), getAccount, strError))
-                          {
-                            if (getAccount.size() == 1)
-                            {
-                              bool bVerified = false;
-                              map<string, string> getAccountRow = getAccount.front();
-                              if (getAccountRow["encrypt"] == "1")
-                              {
-                                list<map<string, string> > getAccountID;
-                                ssQuery.str("");
-                                ssQuery << "select id from application_account where id = " << getAccountRow["id"] << " and `password` = concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Password"]->v, strValue) << "')))))";
-                                if (gpCentral->acorn()->mysqlQuery(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), getAccountID, strError))
-                                {
-                                  if (!getAccountID.empty())
-                                  {
-                                    bVerified = true;
-                                  }
-                                }
-                                getAccountID.clear();
-                              }
-                              else if (getAccountRow["aes"] == "1")
-                              {
-                                if (getAccountRow.find("decrypted_password") != getAccountRow.end() && getAccountRow["decrypted_password"] == ptJson->m["Password"]->v)
-                                {
-                                  bVerified = true;
-                                }
-                              }
-                              else if (getAccountRow["password"] == ptJson->m["Password"]->v)
-                              {
-                                bVerified = true;
-                              }
-                              if (bVerified)
-                              {
-                                if (ptJson->m["Function"]->v == "delete")
-                                {
-                                  ssQuery.str("");
-                                  ssQuery << "delete from application_account where id = " << getAccountRow["id"];
-                                  if (gpCentral->acorn()->mysqlUpdate(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), strError))
-                                  {
-                                    bProcessed = true;
-                                  }
-                                  else
-                                  {
-                                    stringstream ssError;
-                                    ssError << "Acorn::mysqlUpdate(" << ssQuery.str() << ") error:  " << strError;
-                                    strError = ssError.str();
-                                  }
-                                }
-                                else if (ptJson->m["Function"]->v == "update")
-                                {
-                                  ssQuery.str("");
-                                  ssQuery << "update application_account set `password` = ";
-                                  if (getAccountRow["encrypt"] == "1")
-                                  {
-                                    ssQuery << "concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "')))))";
-                                  }
-                                  else if (ptConf->m.find("Aes") != ptConf->m.end() && !ptConf->m["Aes"]->v.empty())
-                                  {
-                                    ssQuery << "to_base64(aes_encrypt('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "', sha2('" << escape(ptConf->m["Aes"]->v, strValue) << "', 512))), aes = 1";
-                                  }
-                                  else
-                                  {
-                                    ssQuery << "'" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "'";
-                                  }
-                                  ssQuery << " where id = " << getAccountRow["id"];
-                                  if (gpCentral->acorn()->mysqlUpdate(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), strError))
-                                  {
-                                    bProcessed = true;
-                                  }
-                                  else
-                                  {
-                                    stringstream ssError;
-                                    ssError << "Acorn::mysqlUpdate(HIDDEN) error:  " << strError;
-                                    strError = ssError.str();
-                                  }
-                                }
-                                else if (ptJson->m["Function"]->v == "verify")
-                                {
-                                  bProcessed = true;
-                                }
-                              }
-                              else
-                              {
-                                strError = "Failed password verification.";
-                              }
-                              getAccountRow.clear();
-                            }
-                            else if (getAccount.empty())
-                            {
-                              strError = "Failed to find the account.";
-                            }
-                            else
-                            {
-                              stringstream ssError;
-                              ssError << getAccount.size() << " accounts match this criteria.";
-                              strError = ssError.str();
-                            }
+                            bProcessed = true;
                           }
                           else
                           {
                             stringstream ssError;
-                            ssError << "Acorn::mysqlQuery(" << ssQuery.str() << ") error:  " << strError << endl;
+                            ssError << "Acorn::mysqlUpdate(" << ssQuery.str() << ") error:  " << strError;
                             strError = ssError.str();
                           }
-                          getAccount.clear();
                         }
-                        else
+                        else if (ptJson->m["Function"]->v == "update")
                         {
-                          strError = (string)"Failed to read the Database User field from the " + strConf + (string)" file.";
+                          ssQuery.str("");
+                          ssQuery << "update application_account set `password` = ";
+                          if (getAccountRow["encrypt"] == "1")
+                          {
+                            ssQuery << "concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "')))))";
+                          }
+                          else if (ptConf->m.find("Aes") != ptConf->m.end() && !ptConf->m["Aes"]->v.empty())
+                          {
+                            ssQuery << "to_base64(aes_encrypt('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "', sha2('" << escape(ptConf->m["Aes"]->v, strValue) << "', 512))), aes = 1";
+                          }
+                          else
+                          {
+                            ssQuery << "'" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "'";
+                          }
+                          ssQuery << " where id = " << getAccountRow["id"];
+                          if (gpCentral->acorn()->mysqlUpdate(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), strError))
+                          {
+                            bProcessed = true;
+                          }
+                          else
+                          {
+                            stringstream ssError;
+                            ssError << "Acorn::mysqlUpdate(HIDDEN) error:  " << strError;
+                            strError = ssError.str();
+                          }
+                        }
+                        else if (ptJson->m["Function"]->v == "verify")
+                        {
+                          bProcessed = true;
                         }
                       }
                       else
                       {
-                        strError = (string)"Failed to read the Database Server field from the " + strConf + (string)" file.";
+                        strError = "Failed password verification.";
                       }
+                      getAccountRow.clear();
+                    }
+                    else if (getAccount.empty())
+                    {
+                      strError = "Failed to find the account.";
                     }
                     else
                     {
-                      strError = (string)"Failed to read the Database Password field from the " + strConf + (string)" file.";
+                      stringstream ssError;
+                      ssError << getAccount.size() << " accounts match this criteria.";
+                      strError = ssError.str();
                     }
                   }
                   else
                   {
-                    strError = (string)"Failed to read the Database field from the " + strConf + (string)" file.";
+                    stringstream ssError;
+                    ssError << "Acorn::mysqlQuery(" << ssQuery.str() << ") error:  " << strError << endl;
+                    strError = ssError.str();
                   }
+                  getAccount.clear();
+                }
+                else if (ptConf->m.find("Database") == ptConf->m.end() || ptConf->m["Database"]->v.empty())
+                {
+                  strError = (string)"Failed to read the Database field from the " + strConf + (string)" file.";
+                }
+                else if (ptConf->m.find("Database Password") == ptConf->m.end() || ptConf->m["Database Password"]->v.empty())
+                {
+                  strError = (string)"Failed to read the Database Password field from the " + strConf + (string)" file.";
+                }
+                else if (ptConf->m.find("Database Server") == ptConf->m.end() || ptConf->m["Database Server"]->v.empty())
+                {
+                  strError = (string)"Failed to read the Database Server field from the " + strConf + (string)" file.";
+                }
+                else if (ptConf->m.find("Database User") == ptConf->m.end() || ptConf->m["Database User"]->v.empty())
+                {
+                  strError = (string)"Failed to read the Database User field from the " + strConf + (string)" file.";
+                }
+                else
+                {
+                  strError = (string)"Failed to read an unknown field from the " + strConf + (string)" file.";
                 }
                 delete ptConf;
               }
