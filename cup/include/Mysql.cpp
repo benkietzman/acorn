@@ -116,7 +116,7 @@ extern "C++"
                 ssError.str("");
                 ssError << "mysql_real_connect(" << mysql_errno(ptMysql->conn) << ") [" << strServer << "," << strUser << "," << strDatabase << "]:  " << mysql_error(ptMysql->conn);
                 strError = ssError.str();
-                if (mysql_errno(conn) == 2005 || mysql_errno(conn) == 2013 || mysql_errno(ptMysql->conn) == 2026)
+                if (mysql_errno(ptMysql->conn) == 2005 || mysql_errno(ptMysql->conn) == 2013 || mysql_errno(ptMysql->conn) == 2026)
                 {
                   bRetry = true;
                 }
