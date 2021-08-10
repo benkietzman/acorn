@@ -164,7 +164,6 @@ int main(int argc, char *argv[], char *env[])
           else if (gExecPid > 0)
           {
             bool bClose = false, bCloseLogger = false, bExit = false, bExternal = ((gstrType == "external")?true:false), bNotifyConnect = false, bRegistered = false;
-            char szBuffer[65536];
             int fdLogger = -1, fdSocket = -1, nReturn;
             list<conn *> conns;
             list<int> removals;
@@ -525,9 +524,8 @@ int main(int argc, char *argv[], char *env[])
                   {
                     if (fds[i].revents & (POLLHUP | POLLIN))
                     {
-                      if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
+                      if (gpCentral->utility()->fdRead(fds[i].fd, strCupBuffer[0], nReturn))
                       {
-                        strCupBuffer[0].append(szBuffer, nReturn);
                         while ((unPosition = strCupBuffer[0].find("\n")) != string::npos)
                         {
                           Json *ptResponse = new Json(strCupBuffer[0].substr(0, unPosition));
@@ -602,7 +600,7 @@ int main(int argc, char *argv[], char *env[])
                         bExit = true;
                         if (nReturn < 0)
                         {
-                          cerr << strPrefix << "->read(" << errno << ") error [cup]:  " << strerror(errno) << endl;
+                          cerr << strPrefix << "->Central::utility()->fdRead(" << errno << ") error [cup]:  " << strerror(errno) << endl;
                         }
                       }
                     }
@@ -613,16 +611,12 @@ int main(int argc, char *argv[], char *env[])
                   {
                     if (fds[i].revents & POLLOUT)
                     {
-                      if ((nReturn = write(fds[i].fd, strCupBuffer[1].c_str(), strCupBuffer[1].size())) > 0)
-                      {
-                        strCupBuffer[1].erase(0, nReturn);
-                      }
-                      else
+                      if (!gpCentral->utility()->fdWrite(fds[i].fd, strCupBuffer[1], nReturn))
                       {
                         bExit = true;
                         if (nReturn < 0)
                         {
-                          cerr << strPrefix << "->write(" << errno << ") error [cup]:  " << strerror(errno) << endl;
+                          cerr << strPrefix << "->Central::utility()->fdWrite(" << errno << ") error [cup]:  " << strerror(errno) << endl;
                         }
                       }
                     }
@@ -681,9 +675,8 @@ int main(int argc, char *argv[], char *env[])
                       // {{{ read from gateway
                       if (fds[i].revents & POLLIN)
                       {
-                        if ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0)
+                        if (gpCentral->utility()->fdRead(fds[i].fd, strGatewayBuffer[0], nReturn))
                         {
-                          strGatewayBuffer[0].append(szBuffer, nReturn);
                           while ((unPosition = strGatewayBuffer[0].find("\n")) != string::npos)
                           {
                             map<string, string> label;
@@ -765,7 +758,7 @@ int main(int argc, char *argv[], char *env[])
                           delete ptJson;
                           if (nReturn < 0)
                           {
-                            cerr << strPrefix << "->read(" << errno << ") error [gateway]:  " << strerror(errno) << endl;
+                            cerr << strPrefix << "->Central::utility()->fdRead(" << errno << ") error [gateway]:  " << strerror(errno) << endl;
                           }
                         }
                       }
@@ -773,11 +766,7 @@ int main(int argc, char *argv[], char *env[])
                       // {{{ write to gateway
                       if (fds[i].revents & POLLOUT)
                       {
-                        if ((nReturn = write(fds[i].fd, strGatewayBuffer[1].c_str(), strGatewayBuffer[1].size())) > 0)
-                        {
-                          strGatewayBuffer[1].erase(0, nReturn);
-                        }
-                        else
+                        if (!gpCentral->utility()->fdWrite(fds[i].fd, strGatewayBuffer[1], nReturn))
                         {
                           bClose = true;
                           bRegistered = false;
@@ -788,7 +777,7 @@ int main(int argc, char *argv[], char *env[])
                           delete ptJson;
                           if (nReturn < 0)
                           {
-                            cerr << strPrefix << "->write(" << errno << ") error [gateway]:  " << strerror(errno) << endl;
+                            cerr << strPrefix << "->Central::utility()->fdWrite(" << errno << ") error [gateway]:  " << strerror(errno) << endl;
                           }
                         }
                       }
@@ -865,24 +854,10 @@ int main(int argc, char *argv[], char *env[])
                           {
                             if (gpCentral->utility()->socketType(fds[i].fd, (*j)->eSocketType, strError))
                             {
-                              if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
+                              if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && ((*j)->ssl = gpCentral->utility()->sslAccept(ctx, fds[i].fd, strError)) == NULL)
                               {
-                                ERR_clear_error();
-                                if (((*j)->ssl = SSL_new(ctx)) == NULL)
-                                {
-                                  bCloseClient = true;
-                                  cerr << strPrefix << "->SSL_new() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
-                                }
-                                else if (!(SSL_set_fd((*j)->ssl, fds[i].fd)))
-                                {
-                                  bCloseClient = true;
-                                  cerr << strPrefix << "->SSL_set_fd() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
-                                }
-                                else if ((nReturn = SSL_accept((*j)->ssl)) <= 0)
-                                {
-                                  bCloseClient = true;
-                                  cerr << strPrefix << "->SSL_accept() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
-                                }
+                                bCloseClient = true;
+                                cerr << strPrefix << "->Central::utility()->sslAccept() error:  " <<  gpCentral->utility()->sslstrerror() << endl;
                               }
                             }
                             else
@@ -891,9 +866,8 @@ int main(int argc, char *argv[], char *env[])
                               cerr << strPrefix << "->Utility::socketType() error:  " << strError << endl;
                             }
                           }
-                          if (!bCloseClient && ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_read((*j)->ssl, szBuffer, 65536)) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = read(fds[i].fd, szBuffer, 65536)) > 0))))
+                          if (!bCloseClient && (((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && gpCentral->utility()->sslRead((*j)->ssl, (*j)->strBuffer[0], nReturn)) || ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && gpCentral->utility()->fdRead(fds[i].fd, (*j)->strBuffer[0], nReturn))))
                           {
-                            (*j)->strBuffer[0].append(szBuffer, nReturn);
                             while ((unPosition = (*j)->strBuffer[0].find("\n")) != string::npos)
                             {
                               map<string, string> label;
@@ -946,11 +920,11 @@ int main(int argc, char *argv[], char *env[])
                             {
                               if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
                               {
-                                cerr << strPrefix << "->SSL_read() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                                cerr << strPrefix << "->Central::utility()->sslRead() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
                               }
                               else
                               {
-                                cerr << strPrefix << "->read(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                                cerr << strPrefix << "->Central::utility()->fdRead(" << errno << ") error [client]:  " << strerror(errno) << endl;
                               }
                             }
                           }
@@ -960,22 +934,18 @@ int main(int argc, char *argv[], char *env[])
                         if (fds[i].revents & POLLOUT)
                         {
                           nReturn = 0;
-                          if ((((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED) && ((nReturn = SSL_write((*j)->ssl, (*j)->strBuffer[1].c_str(), (((*j)->strBuffer[1].size() < 65535)?(*j)->strBuffer[1].size():65536))) > 0)) || (((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED) && ((nReturn = write(fds[i].fd, (*j)->strBuffer[1].c_str(), (((*j)->strBuffer[1].size() < 65535)?(*j)->strBuffer[1].size():65536))) > 0)))
-                          {
-                            (*j)->strBuffer[1].erase(0, nReturn);
-                          }
-                          else
+                          if (((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED && !gpCentral->utility()->sslWrite((*j)->ssl, (*j)->strBuffer[1], nReturn)) || ((*j)->eSocketType == COMMON_SOCKET_UNENCRYPTED && !gpCentral->utility()->fdWrite(fds[i].fd, (*j)->strBuffer[1], nReturn)))
                           {
                             removals.push_back((*j)->fdSocket);
                             if (nReturn < 0)
                             {
                               if ((*j)->eSocketType == COMMON_SOCKET_ENCRYPTED)
                               {
-                                cerr << strPrefix << "->SSL_write() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
+                                cerr << strPrefix << "->Central::utility()->sslWrite() error [client]:  " <<  gpCentral->utility()->sslstrerror() << endl;
                               }
                               else
                               {
-                                cerr << strPrefix << "->write(" << errno << ") error [client]:  " << strerror(errno) << endl;
+                                cerr << strPrefix << "->Central::utility()->fdWrite(" << errno << ") error [client]:  " << strerror(errno) << endl;
                               }
                             }
                           }
