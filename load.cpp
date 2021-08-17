@@ -548,6 +548,7 @@ int main(int argc, char *argv[])
         requests.erase(requests.begin());
       }
       patterns.clear();
+      freeaddrinfo(result);
       // }}}
     }
     else if (!bConnected[0])

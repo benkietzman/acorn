@@ -11,10 +11,13 @@
 #MAKEFLAGS="-j ${C}"
 prefix=/usr/local
 
-all: bin/cap
+all: bin/cap bin/load
 
 bin/cap: ../common/libcommon.a obj/cap.o bin
 	g++ -o bin/cap obj/cap.o $(LDFLAGS) -L../common -lcommon -lb64 -lcrypto -lexpat -lmjson -lnsl -lpthread -lrt -lssl -ltar -lz
+
+bin/load: ../common/libcommon.a obj/load.o bin
+	g++ -o bin/load obj/load.o $(LDFLAGS) -L../common -lcommon -lexpat -lmjson -lncurses -lpthread
 
 bin:
 	-if [ ! -d bin ]; then mkdir bin; fi;
@@ -30,6 +33,9 @@ bin:
 
 obj/cap.o: cap.cpp obj ../common/Makefile
 	g++ -g -Wall -c cap.cpp -o obj/cap.o $(CPPFLAGS) -I../common
+
+obj/load.o: load.cpp obj ../common/Makefile
+	g++ -g -Wall -c load.cpp -o obj/load.o $(CPPFLAGS) -I../common
 
 obj:
 	-if [ ! -d obj ]; then mkdir obj; fi;
