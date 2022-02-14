@@ -124,10 +124,6 @@ factories.acorn = function ($cookies, $http, $location, $q, $rootScope, $websock
     { 
       common.setSecureLogin(response.data.secureLogin);
     }
-    if (angular.isDefined(response.data.security))
-    { 
-      common.setSecurity(response.data.security);
-    }
     common.wsCreate('Acorn', 'bridge', strBridgeServer, '2797', (($location.protocol() === 'https')?true:false), 'bridge');
     $rootScope.$root.$broadcast('resetMenu', null);
   });
