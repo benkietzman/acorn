@@ -243,12 +243,12 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
     bResult = true;
     // {{{ set signal handling
     sethandles(sighandle);
-    sigignore(SIGBUS);
-    sigignore(SIGCHLD);
-    sigignore(SIGCONT);
-    sigignore(SIGPIPE);
-    sigignore(SIGSEGV);
-    sigignore(SIGWINCH);
+    signal(SIGBUS, SIG_IGN);
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGCONT, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGSEGV, SIG_IGN);
+    signal(SIGWINCH, SIG_IGN);
     // }}} 
     // {{{ command line arguments
     for (int i = 1; i < argc; i++)
