@@ -118,7 +118,7 @@ factories.acorn = function ($cookies, $http, $location, $q, $rootScope, $websock
     }
     if (angular.isDefined(response.data.redirectPath))
     {
-      common.setRedirectPath($location.protocol()+'://'+response.data.redirectPath);
+      common.setRedirectPath(response.data.redirectPath);
     }
     if (angular.isDefined(response.data.secureLogin))
     {
