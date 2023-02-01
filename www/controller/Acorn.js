@@ -99,38 +99,41 @@ controllers.Home = function ($http, $interval, $location, $scope, acorn, common)
             $scope.store.routers[i].Acorns = [];
             $scope.store.routers[i].Buffers.Input /= 1024;
             $scope.store.routers[i].Buffers.Output /= 1024;
-            for (var j = 0; j < $scope.store.routers[i].Gateways.length; j++)
+            if (angular.isDefined($scope.store.routers[i].Gateways))
             {
-              $scope.store.routers[i].Gateways[j].background = (($scope.store.routers[i].Gateways[j].Enabled)?'#a9dfbf':(($scope.store.routers[i].Gateways[j].Connected)?'#fad7a0':'#f5b7b1'));
-              $scope.store.routers[i].Gateways[j].Buffers.Input /= 1024;
-              $scope.store.routers[i].Gateways[j].Buffers.Output /= 1024;
-              if ($scope.store.routers[i].Gateways[i].Enabled)
+              for (var j = 0; j < $scope.store.routers[i].Gateways.length; j++)
               {
-                for (var k = 0; k < $scope.store.routers[i].Gateways[j].Acorns.length; k++)
+                $scope.store.routers[i].Gateways[j].background = (($scope.store.routers[i].Gateways[j].Enabled)?'#a9dfbf':(($scope.store.routers[i].Gateways[j].Connected)?'#fad7a0':'#f5b7b1'));
+                $scope.store.routers[i].Gateways[j].Buffers.Input /= 1024;
+                $scope.store.routers[i].Gateways[j].Buffers.Output /= 1024;
+                if ($scope.store.routers[i].Gateways[i].Enabled)
                 {
-                  var bFound = false;
-                  for (var l = 0; !bFound && l < $scope.store.acorns.length; l++)
+                  for (var k = 0; k < $scope.store.routers[i].Gateways[j].Acorns.length; k++)
                   {
-                    if ($scope.store.routers[i].Gateways[j].Acorns[k] == $scope.store.acorns[l])
+                    var bFound = false;
+                    for (var l = 0; !bFound && l < $scope.store.acorns.length; l++)
                     {
-                      bFound = true;
+                      if ($scope.store.routers[i].Gateways[j].Acorns[k] == $scope.store.acorns[l])
+                      {
+                        bFound = true;
+                      }
                     }
-                  }
-                  if (!bFound)
-                  {
-                    $scope.store.acorns.push($scope.store.routers[i].Gateways[j].Acorns[k]);
-                  }
-                  bFound = false;
-                  for (var l = 0; !bFound && l < $scope.store.routers[i].Acorns.length; l++)
-                  {
-                    if ($scope.store.routers[i].Gateways[j].Acorns[k] == $scope.store.routers[i].Acorns[l])
+                    if (!bFound)
                     {
-                      bFound = true;
+                      $scope.store.acorns.push($scope.store.routers[i].Gateways[j].Acorns[k]);
                     }
-                  }
-                  if (!bFound)
-                  {
-                    $scope.store.routers[i].Acorns.push($scope.store.routers[i].Gateways[j].Acorns[k]);
+                    bFound = false;
+                    for (var l = 0; !bFound && l < $scope.store.routers[i].Acorns.length; l++)
+                    {
+                      if ($scope.store.routers[i].Gateways[j].Acorns[k] == $scope.store.routers[i].Acorns[l])
+                      {
+                        bFound = true;
+                      }
+                    }
+                    if (!bFound)
+                    {
+                      $scope.store.routers[i].Acorns.push($scope.store.routers[i].Gateways[j].Acorns[k]);
+                    }
                   }
                 }
               }
