@@ -49,14 +49,13 @@ using namespace std;
 #include <Central>
 #include <Json>
 #include <SignalHandling>
-#include <Syslog>
 using namespace common;
 // }}}
 // {{{ defines
 /*! \def mUSAGE(A)
 * \brief Prints the usage statement.
 */
-#define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -c CUP, --cup=CUP" << endl << "     Provides the executable command and arguments for the cup." << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -g GATEWAY, --gateway=GATEWAY" << endl << "     Used by an internal type to provide the unix socket path to the gateway." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -m RESIDENT, --memory=RESIDENT" << endl << "     Provides the maximum resident memory size restriction in MB." << endl << endl << " -n NAME, --name=NAME" << endl << "     Provides the acorn, gateway, or router name." << endl << endl << " -p PORT, --port=PORT" << endl << "     Used by an external type to provide the listening port number." << endl << endl << "     --syslog" << endl << "     Enables syslog." << endl << endl << " -t TYPE, --type=TYPE" << endl << "     Provides a cap type of either external or internal." << endl << endl
+#define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -c CUP, --cup=CUP" << endl << "     Provides the executable command and arguments for the cup." << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -g GATEWAY, --gateway=GATEWAY" << endl << "     Used by an internal type to provide the unix socket path to the gateway." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -m RESIDENT, --memory=RESIDENT" << endl << "     Provides the maximum resident memory size restriction in MB." << endl << endl << " -n NAME, --name=NAME" << endl << "     Provides the acorn, gateway, or router name." << endl << endl << " -p PORT, --port=PORT" << endl << "     Used by an external type to provide the listening port number." << endl << endl << " -t TYPE, --type=TYPE" << endl << "     Provides a cap type of either external or internal." << endl << endl
 /*! \def CERTIFICATE
 * \brief Contains the certificate path.
 */
@@ -93,7 +92,6 @@ string gstrPort = "22676"; //!< Global listening port number.
 string gstrType = "internal"; //!< Global cap type.
 unsigned long gulMaxResident = 40 * 1024; //!< Global resident memory restriction in KB.
 Central *gpCentral = NULL; //!< Contains the Central class.
-Syslog *gpSyslog = NULL; //!< Contains the Syslog class.
 // }}}
 // {{{ prototypes
 /*! \fn void initialize(string strPrefix, int argc, char *argv[], string &strError)
@@ -151,10 +149,6 @@ int main(int argc, char *argv[], char *env[])
             close(CHILD_READ);
             dup2(CHILD_WRITE, 1);
             close(CHILD_WRITE);
-            if (gpSyslog != NULL)
-            {
-              gpSyslog->commandLaunched(gstrCup);
-            }
             execve(args[0], args, env);
             cerr << strPrefix << "->execve(" << errno << ") error:  " << strerror(errno) << endl;
             _exit(1);
@@ -639,10 +633,6 @@ int main(int argc, char *argv[], char *env[])
                         {
                           bool bFound = true;
                           conn *ptConn = new conn;
-                          if (gpSyslog != NULL)
-                          { 
-                            gpSyslog->connectionStarted("Accepted an incoming request.", fdClient);
-                          }
                           ptConn->eSocketType = COMMON_SOCKET_UNKNOWN;
                           ptConn->fdSocket = fdClient;
                           while (bFound)
@@ -1056,10 +1046,6 @@ int main(int argc, char *argv[], char *env[])
     {
       mUSAGE(argv[0]);
     }
-    if (gpSyslog != NULL)
-    {
-      delete gpSyslog;
-    }
     gpCentral->utility()->sslDeinit();
     delete gpCentral;
   }
@@ -1176,10 +1162,6 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
         }
         gpCentral->manip()->purgeChar(gstrPort, gstrPort, "'");
         gpCentral->manip()->purgeChar(gstrPort, gstrPort, "\"");
-      }
-      else if (strArg == "--syslog")
-      {
-        gpSyslog = new Syslog(gstrApplication, "cap");
       }
       else if (strArg == "-t" || (strArg.size() > 7 && strArg.substr(0, 7) == "--type="))
       {

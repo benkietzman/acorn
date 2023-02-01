@@ -43,14 +43,13 @@ using namespace std;
 #include <Central>
 #include <Json>
 #include <SignalHandling>
-#include <Syslog>
 using namespace common;
 // }}}
 // {{{ defines
 /*! \def mUSAGE(A)
 * \brief Prints the usage statement.
 */
-#define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -n NAME, --name=NAME" << endl << "     Sets the router name." << endl << endl << " -s SERVER, --server=SERVER" << endl << "     Sets the server name." << endl << endl << "     --syslog" << endl << "     Enables syslog." << endl << endl
+#define mUSAGE(A) cout << endl << "Usage:  "<< A << " [options]"  << endl << endl << " -d DATA, --data=DATA" << endl << "     Sets the data directory." << endl << endl << " -h, --help" << endl << "     Displays this usage screen." << endl << endl << " -n NAME, --name=NAME" << endl << "     Sets the router name." << endl << endl << " -s SERVER, --server=SERVER" << endl << "     Sets the server name." << endl << endl
 /*! \def CERTIFICATE
 * \brief Contains the certificate path.
 */
@@ -92,7 +91,6 @@ string gstrPassword; //<! Contains the password.
 string gstrServer; //!< Global acorn or gateway name.
 SSL_CTX *gCtx = NULL; //!< Global OpenSSL context.
 Central *gpCentral = NULL; //!< Contains the Central class.
-Syslog *gpSyslog = NULL; //!< Contains the Syslog class.
 // }}}
 // {{{ prototypes
 /*! \fn bool acornDeregister(string strPrefix, list<conn *>::iterator connIter, const string strAcorn, string &strError)
@@ -465,10 +463,6 @@ int main(int argc, char *argv[])
                       if ((fdClient = accept(fdLink, (sockaddr *)&cli_addr, &clilen)) >= 0)
                       {
                         conn *ptConn = new conn;
-                        if (gpSyslog != NULL)
-                        {
-                          gpSyslog->connectionStarted("Accepted an incoming request.", fdClient);
-                        }
                         ptConn->eSocketType = COMMON_SOCKET_UNKNOWN;
                         ptConn->fdSocket = fdClient;
                         links.push_back(ptConn);
@@ -493,10 +487,6 @@ int main(int argc, char *argv[])
                             (*j)->strBuffer[0].erase(0, (unPosition + 1));
                             if (ptRequest->m.find("Password") != ptRequest->m.end() && ptRequest->m["Password"]->v == gstrPassword)
                             {
-                              if (gpSyslog != NULL)
-                              {
-                                gpSyslog->logon("Authenticated the router.");
-                              }
                               if (ptRequest->m.find("Function") != ptRequest->m.end() && !ptRequest->m["Function"]->v.empty())
                               {
                                 if (ptRequest->m.find("Request") != ptRequest->m.end())
@@ -692,10 +682,6 @@ int main(int argc, char *argv[])
                             j->strBuffer[0].erase(0, (unPosition + 1));
                             if (ptJson->m.find("Password") != ptJson->m.end() && ptJson->m["Password"]->v == gstrPassword)
                             {
-                              if (gpSyslog != NULL)
-                              {
-                                gpSyslog->logon("Authenticated the link.");
-                              }
                               if (ptJson->m.find("Server") != ptJson->m.end() && !ptJson->m["Server"]->v.empty())
                               {
                                 list<conn *>::iterator connIter = gRouters.end();
@@ -801,10 +787,6 @@ int main(int argc, char *argv[])
                                   {
                                     if (ptRequest->m["Password"]->v == gstrPassword)
                                     {
-                                      if (gpSyslog != NULL)
-                                      {
-                                        gpSyslog->logon("Authenticated the client.");
-                                      }
                                       if (ptRequest->m.find("Request") != ptRequest->m.end())
                                       {
                                         if (ptRequest->m["Request"]->m.find("Gateway") != ptRequest->m["Request"]->m.end() && !ptRequest->m["Request"]->m["Gateway"]->v.empty())
@@ -1352,10 +1334,6 @@ int main(int argc, char *argv[])
         gpCentral->log(ssMessage.str(), strError);
       }
     }
-    if (gpSyslog != NULL)
-    {
-      delete gpSyslog;
-    }
     SSL_CTX_free(gCtx);
     gpCentral->utility()->sslDeinit();
     delete gpCentral;
@@ -1675,10 +1653,6 @@ bool initialize(string strPrefix, int argc, char *argv[], string &strError)
       {
         bResult = false;
         mUSAGE(argv[0]);
-      }
-      else if (strArg == "--syslog")
-      {
-        gpSyslog = new Syslog(gstrApplication, "router");
       }
       else
       {
