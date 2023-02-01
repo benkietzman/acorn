@@ -32,19 +32,19 @@ factories.acorn = function ($cookies, $http, $location, $q, $rootScope, $websock
   // }}}
   // {{{ ready()
   factory.ready = function (response, error)
-  {       
+  {
     if (!this.m_bReady && this.m_bCentralMenuReady && this.m_bCommonAuthReady && this.m_bCommonWsReady && this.m_bFooterReady)
     {
       this.m_bReady = true;
       $rootScope.$root.$broadcast('ready', null);
-    }   
-    
+    }
+
     return this.m_bReady;
   };
   // }}}
-  // {{{ request() 
+  // {{{ request()
   factory.request = function (strService, strFunction, request, callback)
-  { 
+  {
     var data = {'Service': strService, 'Function': strFunction};
     if (request != null)
     {
@@ -106,22 +106,22 @@ factories.acorn = function ($cookies, $http, $location, $q, $rootScope, $websock
     factory.ready();
   });
   $http({method: 'GET', url: 'factory/settings.json'}).then(function (response)
-  { 
+  {
     var strBridgeServer = 'localhost';
     if (angular.isDefined(response.data.bridgeServer))
-    { 
+    {
       strBridgeServer = response.data.bridgeServer;
     }
     if (angular.isDefined(response.data.enableJwt))
-    { 
+    {
       common.enableJwt(response.data.enableJwt);
     }
     if (angular.isDefined(response.data.redirectPath))
-    { 
+    {
       common.setRedirectPath($location.protocol()+'://'+response.data.redirectPath);
     }
     if (angular.isDefined(response.data.secureLogin))
-    { 
+    {
       common.setSecureLogin(response.data.secureLogin);
     }
     common.wsCreate('Acorn', 'bridge', strBridgeServer, '2797', (($location.protocol() === 'https')?true:false), 'bridge');
