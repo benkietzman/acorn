@@ -357,7 +357,7 @@ void request(Json *ptJson)
                       {
                         list<map<string, string> > getAccountID;
                         ssQuery.str("");
-                        ssQuery << "select id from application_account where id = " << getAccountRow["id"] << " and `password` = concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Password"]->v, strValue) << "')))))";
+                        ssQuery << "select id from application_account where id = " << getAccountRow["id"] << " and (`password` = concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Password"]->v, strValue) << "'))))) or `password` = concat('!',upper(sha2(unhex(sha2('" << escape(ptJson->m["Password"]->v, strValue) << "', 512)), 512))))";
                         if (gpCentral->acorn()->mysqlQuery(ptConf->m["Database User"]->v, ptConf->m["Database Password"]->v, ptConf->m["Database Server"]->v, ptConf->m["Database"]->v, ssQuery.str(), getAccountID, strError))
                         {
                           if (!getAccountID.empty())
@@ -401,7 +401,7 @@ void request(Json *ptJson)
                           ssQuery << "update application_account set `password` = ";
                           if (getAccountRow["encrypt"] == "1")
                           {
-                            ssQuery << "concat('*',upper(sha1(unhex(sha1('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "')))))";
+                            ssQuery << "concat('!',upper(sha2(unhex(sha2('" << escape(ptJson->m["Request"]->m["NewPassword"]->v, strValue) << "', 512)), 512)))";
                           }
                           else if (ptConf->m.find("Aes") != ptConf->m.end() && !ptConf->m["Aes"]->v.empty())
                           {
