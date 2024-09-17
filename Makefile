@@ -14,7 +14,7 @@ prefix=/usr/local
 all: bin/cap bin/load
 
 bin/cap: ../common/libcommon.a obj/cap.o bin
-	g++ -o bin/cap obj/cap.o $(LDFLAGS) -L../common -lcommon -lb64 -lcrypto -lexpat -lmjson -lnsl -lpthread -lrt -lssl -ltar -lz
+	g++ -o bin/cap obj/cap.o $(LDFLAGS) -L../common -lcommon -lb64 -lcrypto -lexpat -lmjson -lpthread -lrt -lssl -ltar -lz
 
 bin/load: ../common/libcommon.a obj/load.o bin
 	g++ -o bin/load obj/load.o $(LDFLAGS) -L../common -lcommon -lexpat -lmjson -lncurses -lpthread
