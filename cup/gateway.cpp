@@ -1,4 +1,3 @@
-// vim600: fdm=marker
 /* -*- c++ -*- */
 ///////////////////////////////////////////
 // Acorn
@@ -6,19 +5,9 @@
 // file       : gateway.cpp
 // author     : Ben Kietzman
 // begin      : 2018-12-18
-// copyright  : kietzman.org
+// copyright  : Ben Kietzman
 // email      : ben@kietzman.org
 ///////////////////////////////////////////
-
-/**************************************************************************
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*                                                                         *
-**************************************************************************/
-
 /*! \file gateway.cpp
 * \brief Acorn Cup - gateway
 *

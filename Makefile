@@ -4,7 +4,7 @@
 # file       : Makefile
 # author     : Ben Kietzman
 # begin      : 2018-12-17
-# copyright  : kietzman.org
+# copyright  : Ben Kietzman
 # email      : ben@kietzman.org
 ###########################################
 
