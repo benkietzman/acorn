@@ -616,7 +616,7 @@ int main(int argc, char *argv[], char *env[])
                       {
                         int fdClient;
                         socklen_t clilen;
-                        sockaddr_in cli_addr;
+                        sockaddr_in6 cli_addr;
                         clilen = sizeof(cli_addr);
                         if ((fdClient = accept(fds[i].fd, (sockaddr *)&cli_addr, &clilen)) >= 0)
                         {

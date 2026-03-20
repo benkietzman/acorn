@@ -447,8 +447,8 @@ int main(int argc, char *argv[])
                     {
                       int fdClient;
                       socklen_t clilen;
-                      sockaddr_in cli_addr;
-                      clilen = sizeof(sockaddr_in);
+                      sockaddr_in6 cli_addr;
+                      clilen = sizeof(cli_addr);
                       if ((fdClient = accept(fdLink, (sockaddr *)&cli_addr, &clilen)) >= 0)
                       {
                         conn *ptConn = new conn;
